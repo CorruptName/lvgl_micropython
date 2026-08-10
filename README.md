@@ -19,7 +19,38 @@
 # LVGL binding for Micropython
 ______________________________
 
-## Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3
+## ESP32-P4 firmware
+
+This branch includes two complete merged firmware images. Both use a 32 MB
+flash layout and must be written at offset `0x0`.
+
+| Image | Purpose | SHA-256 |
+| --- | --- | --- |
+| `firmware.bin` | Generic ESP32-P4 LVGL build with all display, input, and expander drivers | `D91E15A7D883D16EA6A85812DA7328F39ED06BC1FB34A635977E476CD0BC80DC` |
+| `firmware-waveshare-esp32-p4-4.3.bin` | Hardware-tested Waveshare 4.3-inch display and touch build | `4AB07E883A4097F42FEBBCA663E6127EA0A2B9982576D22176F8C30B79E570E1` |
+
+### Build requirements
+
+Building from source is optional. Use Linux or WSL with an ESP-IDF 5.5.1
+environment. Native Windows builds are not supported by `make.py`.
+
+```bash
+git clone --branch waveshare-esp32-p4-4.3 \
+  https://github.com/CorruptName/lvgl_micropython.git
+cd lvgl_micropython
+```
+
+### Generic ESP32-P4 build
+
+Build LVGL MicroPython for a generic ESP32-P4 with all available display,
+input, and I/O-expander drivers:
+
+```bash
+python3 make.py esp32 BOARD=ESP32_GENERIC_P4 --flash-size=32 \
+  DISPLAY=all INDEV=all EXPANDER=all
+```
+
+### Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3
 
 This fork includes display and touch support for the Waveshare
 ESP32-P4-WIFI6-Touch-LCD-4.3:
@@ -29,32 +60,26 @@ ESP32-P4-WIFI6-Touch-LCD-4.3:
 - GPIO 26 inverted PWM backlight
 - GPIO 27 display reset and GPIO 23 touch reset
 
-### Build
-
-Build from Linux or WSL using an ESP-IDF 5.5 environment. Native Windows
-builds are not supported by `make.py`.
+Build the board-specific display, backlight, and touch configuration:
 
 ```bash
-git clone https://github.com/CorruptName/lvgl_micropython.git
-cd lvgl_micropython
-git switch waveshare-esp32-p4-4.3
 python3 make.py \
   --toml=display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.toml
 ```
 
-The merged image is written to:
+Both build commands write their merged image to:
 
 ```text
-build/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.bin
+build/lvgl_micropy_ESP32_GENERIC_P4-32.bin
 ```
 
-The tested build uses a 32 MB flash layout. The builder automatically enlarges
-the application partition and rebuilds when necessary.
+Copy or rename that file after each build if you need to keep both locally. The
+two distinctly named firmware files in the repository are already separated.
 
 ### Flash
 
-Build and flash are intentionally separate operations. Install esptool on the
-computer connected to the board:
+Build and flash are intentionally separate operations. Flashing does not run
+the build again. Install esptool on the computer connected to the board:
 
 ```powershell
 python -m pip install esptool
@@ -63,19 +88,52 @@ python -m pip install esptool
 1. Connect the board over USB.
 2. Put it into manual download/boot mode.
 3. Replace `COMx` below with its serial port.
-4. Flash the already-built merged image without rebuilding:
+4. Set `FIRMWARE` to the image you want to flash:
+
+```powershell
+# Generic ESP32-P4 LVGL firmware
+$FIRMWARE = "firmware.bin"
+
+# Or use the hardware-tested Waveshare 4.3-inch firmware
+# $FIRMWARE = "firmware-waveshare-esp32-p4-4.3.bin"
+```
+
+5. Flash the selected merged image:
 
 ```powershell
 python -m esptool --chip esp32p4 -p COMx -b 460800 `
   --before default-reset --after hard-reset write-flash `
   --flash-mode dio --flash-size 32MB --flash-freq 40m `
-  --erase-all 0x0 build/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.bin
+  --erase-all 0x0 $FIRMWARE
 ```
 
-For Linux, use the same command with `python3` and a port such as
-`/dev/ttyACM0`; replace PowerShell backticks with backslashes.
+To flash an image you just built, set `$FIRMWARE` to
+`build/lvgl_micropy_ESP32_GENERIC_P4-32.bin`.
+
+On Linux, select a serial port and firmware path, then run:
+
+```bash
+PORT=/dev/ttyACM0
+FIRMWARE=firmware-waveshare-esp32-p4-4.3.bin
+python3 -m esptool --chip esp32p4 -p "$PORT" -b 460800 \
+  --before default-reset --after hard-reset write-flash \
+  --flash-mode dio --flash-size 32MB --flash-freq 40m \
+  --erase-all 0x0 "$FIRMWARE"
+```
 
 Do not disconnect or reset the board while the flash operation is running.
+
+After flashing the Waveshare image, connect to the MicroPython REPL and verify
+the display and touch initialization:
+
+```python
+import display
+print(display.display)
+print(display.indev)
+print(display.indev.hw_size)
+```
+
+The touch size should be `(480, 800)`.
 
 
 This project is a spinoff of the 
