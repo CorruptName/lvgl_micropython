@@ -1,5 +1,6 @@
 [MCU.esp32]
 BOARD = "ESP32_GENERIC_P4"
+FROZEN_MANIFEST = "display_configs/waveshare_esp32_p4_audio_manifest.py"
 flash_size = 32
 enable_jtag_repl = 'n'
 enable_cdc_repl = 'y'
@@ -33,6 +34,11 @@ freq = 400000
 bus = "i2c_bus"
 dev_id = "gt911.I2C_ADDR"
 reg_bits = "gt911.BITS"
+
+[I2C.Device.audio_device]
+bus = "i2c_bus"
+dev_id = 24
+reg_bits = 8
 
 [ST7701.display]
 data_bus = "display_bus"
