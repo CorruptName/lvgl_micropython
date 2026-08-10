@@ -1582,21 +1582,31 @@ def compile(*args):  # NOQA
         if 'Project build complete.' in output:
             output = output.rsplit('To flash, run:')[-1].strip()
 
-            espressif_path = os.path.expanduser('~/.espressif')
-
-            for ver in ('3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14'):
-                python_path = (
-                    f'{espressif_path}/python_env/'
-                    f'idf{IDF_VER[:-2]}_py{ver}_env/bin'
-                )
-                if os.path.exists(python_path):
-                    break
+            python_env_path = os.environ.get('IDF_PYTHON_ENV_PATH')
+            if python_env_path is not None:
+                python_path = os.path.join(python_env_path, 'bin', 'python')
             else:
-                raise RuntimeError(
-                    'unable to locate python version used in the ESP-IDF'
+                idf_tools_path = os.environ.get(
+                    'IDF_TOOLS_PATH',
+                    os.path.expanduser('~/.espressif')
                 )
 
-            python_path += '/python'
+                for ver in (
+                    '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14'
+                ):
+                    python_path = os.path.join(
+                        idf_tools_path,
+                        'python_env',
+                        f'idf{IDF_VER[:-2]}_py{ver}_env',
+                        'bin',
+                        'python'
+                    )
+                    if os.path.exists(python_path):
+                        break
+                else:
+                    raise RuntimeError(
+                        'unable to locate python version used in the ESP-IDF'
+                    )
 
             output = output.split('python ', 1)[-1]
             output = output.split('\n', 1)[0]
