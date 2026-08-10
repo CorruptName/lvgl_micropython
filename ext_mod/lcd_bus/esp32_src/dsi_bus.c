@@ -39,7 +39,7 @@
     mp_lcd_err_t dsi_del(mp_obj_t obj);
     mp_lcd_err_t dsi_init(mp_obj_t obj, uint16_t width, uint16_t height, uint8_t bpp, uint32_t buffer_size, bool rgb565_byte_swap, uint8_t cmd_bits, uint8_t param_bits);
     mp_lcd_err_t dsi_get_lane_count(mp_obj_t obj, uint8_t *lane_count);
-    mp_lcd_err_t dsi_tx_color(mp_obj_t obj, int lcd_cmd, void *color, size_t color_size, int x_start, int y_start, int x_end, int y_end, , uint8_t rotation, bool last_update);
+    mp_lcd_err_t dsi_tx_color(mp_obj_t obj, int lcd_cmd, void *color, size_t color_size, int x_start, int y_start, int x_end, int y_end, uint8_t rotation, bool last_update);
     mp_obj_t dsi_allocate_framebuffer(mp_obj_t obj, uint32_t size, uint32_t caps);
     mp_obj_t dsi_free_framebuffer(mp_obj_t obj, mp_obj_t buf);
 
@@ -68,6 +68,10 @@
             ARG_bus_id,
             ARG_data_lanes,
             ARG_freq,
+            ARG_lane_freq,
+            ARG_dpi_freq,
+            ARG_ldo_channel,
+            ARG_ldo_voltage,
             ARG_virtual_channel,
             ARG_hsync_front_porch,
             ARG_hsync_back_porch,
@@ -80,7 +84,11 @@
         const mp_arg_t make_new_args[] = {
             { MP_QSTR_bus_id,             MP_ARG_INT  | MP_ARG_KW_ONLY | MP_ARG_REQUIRED       },
             { MP_QSTR_data_lanes,         MP_ARG_INT  | MP_ARG_KW_ONLY | MP_ARG_REQUIRED       },
-            { MP_QSTR_freq,               MP_ARG_INT  | MP_ARG_KW_ONLY | MP_ARG_REQUIRED       },
+            { MP_QSTR_freq,               MP_ARG_INT  | MP_ARG_KW_ONLY, { .u_int = 0       } },
+            { MP_QSTR_lane_freq,          MP_ARG_INT  | MP_ARG_KW_ONLY, { .u_int = 0       } },
+            { MP_QSTR_dpi_freq,           MP_ARG_INT  | MP_ARG_KW_ONLY, { .u_int = 0       } },
+            { MP_QSTR_ldo_channel,        MP_ARG_INT  | MP_ARG_KW_ONLY, { .u_int = 0       } },
+            { MP_QSTR_ldo_voltage,        MP_ARG_INT  | MP_ARG_KW_ONLY, { .u_int = 0       } },
             { MP_QSTR_virtual_channel,    MP_ARG_INT  | MP_ARG_KW_ONLY | MP_ARG_REQUIRED       },
             { MP_QSTR_hsync_front_porch,  MP_ARG_INT  | MP_ARG_KW_ONLY, { .u_int = 0       } },
             { MP_QSTR_hsync_back_porch,   MP_ARG_INT  | MP_ARG_KW_ONLY, { .u_int = 0       } },
@@ -100,15 +108,38 @@
             args
         );
 
+        uint32_t legacy_freq = (uint32_t)args[ARG_freq].u_int;
+        uint32_t lane_freq = (uint32_t)args[ARG_lane_freq].u_int;
+        uint32_t dpi_freq = (uint32_t)args[ARG_dpi_freq].u_int;
+
+        if (lane_freq == 0) {
+            lane_freq = legacy_freq;
+        }
+
+        if (dpi_freq == 0) {
+            dpi_freq = legacy_freq;
+        }
+
+        if (lane_freq == 0 || dpi_freq == 0) {
+            mp_raise_ValueError(MP_ERROR_TEXT("lane_freq and dpi_freq are required"));
+        }
+
         // create new object
-        mp_lcd_dsi_bus_obj_t *self = m_new_obj(mp_lcd_dsi_bus_obj_t);
+        mp_lcd_dsi_bus_obj_t *self = m_new0(mp_lcd_dsi_bus_obj_t, 1);
         self->base.type = &mp_lcd_dsi_bus_type;
     
         self->callback = mp_const_none;
+        self->ldo_handle = NULL;
+        self->ldo_channel = (int)args[ARG_ldo_channel].u_int;
+        self->ldo_voltage = (int)args[ARG_ldo_voltage].u_int;
+
+        if ((self->ldo_channel == 0) != (self->ldo_voltage == 0)) {
+            mp_raise_ValueError(MP_ERROR_TEXT("ldo_channel and ldo_voltage must be used together"));
+        }
 
         self->bus_config.bus_id = (int)args[ARG_bus_id].u_int;
         self->bus_config.num_data_lanes = (uint8_t)args[ARG_data_lanes].u_int;
-        self->bus_config.lane_bit_rate_mbps = (uint32_t)args[ARG_freq].u_int;
+        self->bus_config.lane_bit_rate_mbps = lane_freq;
         self->bus_config.phy_clk_src = MIPI_DSI_PHY_CLK_SRC_DEFAULT;
 
         self->panel_io_config.virtual_channel = (uint8_t)args[ARG_virtual_channel].u_int;
@@ -116,7 +147,7 @@
         self->panel_config.virtual_channel = (uint8_t)args[ARG_virtual_channel].u_int;
         self->panel_config.dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT;
 
-        self->panel_config.dpi_clock_freq_mhz = (uint32_t)args[ARG_freq].u_int;
+        self->panel_config.dpi_clock_freq_mhz = dpi_freq;
 
         self->panel_config.video_timing.hsync_back_porch = (uint32_t)args[ARG_hsync_back_porch].u_int;
         self->panel_config.video_timing.hsync_pulse_width = (uint32_t)args[ARG_hsync_pulse_width].u_int;
@@ -127,7 +158,7 @@
 
         self->panel_config.num_fbs = 0;
 
-        self->bus_config.pclk_hz = (uint32_t)args[ARG_freq].u_int;
+        self->bus_config.pclk_hz = dpi_freq * 1000000;
 
         LCD_DEBUG_PRINT("bus_id=%d\n", self->bus_config.bus_id)
         LCD_DEBUG_PRINT("num_data_lanes=%d\n", self->bus_config.num_data_lanes)
@@ -160,6 +191,21 @@
         LCD_DEBUG_PRINT("dsi_init(self, width=%i, height=%i, bpp=%i, buffer_size=%lu, rgb565_byte_swap=%i, cmd_bits=%i, param_bits=%i)\n", width, height, bpp, buffer_size, (uint8_t)rgb565_byte_swap, cmd_bits, param_bits)
 
         mp_lcd_dsi_bus_obj_t *self = (mp_lcd_dsi_bus_obj_t *)obj;
+
+        if (self->ldo_handle == NULL) {
+            esp_ldo_channel_config_t ldo_config = {
+                .chan_id = self->ldo_channel,
+                .voltage_mv = self->ldo_voltage,
+            };
+
+            if (ldo_config.chan_id != 0 || ldo_config.voltage_mv != 0) {
+                esp_err_t ldo_ret = esp_ldo_acquire_channel(&ldo_config, &self->ldo_handle);
+                if (ldo_ret != ESP_OK) {
+                    mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%d(esp_ldo_acquire_channel)"), ldo_ret);
+                    return ldo_ret;
+                }
+            }
+        }
 
         switch(bpp) {
             case 16:
@@ -261,7 +307,7 @@
         }
 
 
-        mp_lcd_err_t ret = esp_lcd_panel_io_del(self->panel_io_handle.panel_io);
+        ret = esp_lcd_panel_io_del(self->panel_io_handle.panel_io);
         if (ret != 0) {
             mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%d(esp_lcd_panel_io_del)"), ret);
             return ret;
@@ -271,6 +317,15 @@
         if (ret != 0) {
             mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%d(esp_lcd_del_dsi_bus)"), ret);
             return ret;
+        }
+
+        if (self->ldo_handle != NULL) {
+            ret = esp_ldo_release_channel(self->ldo_handle);
+            if (ret != ESP_OK) {
+                mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%d(esp_ldo_release_channel)"), ret);
+                return ret;
+            }
+            self->ldo_handle = NULL;
         }
 
         return ret;

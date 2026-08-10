@@ -1,12 +1,15 @@
 import os
 
 try:
-    import toml
+    import tomllib as toml
 except ImportError:
-    raise RuntimeError(
-        'The toml library is needed to use this feature.\n'
-        'Please run "pip3 install toml" and then restart your build'
-    )
+    try:
+        import toml
+    except ImportError:
+        raise RuntimeError(
+            'The toml library is needed to use this feature.\n'
+            'Please run "pip3 install toml" and then restart your build'
+        )
 
 used_imports = []
 global_variable_names = []
@@ -109,7 +112,7 @@ class TOMLObject(metaclass=TOMLMeta):
         if self.name in io_expanders:
             return self.name
 
-        if self.name in ('I80Bus', 'SPIBus', 'I2CBus', 'RGBBus'):
+        if self.name in ('I80Bus', 'SPIBus', 'I2CBus', 'RGBBus', 'DSIBus'):
             return 'lcd_bus.' + self.name
 
         if self.parent is None:
@@ -486,7 +489,7 @@ def run(toml_path, output_file):
 
     try:
         with open(toml_path, 'r') as f:
-            toml_data = toml.load(f)
+            toml_data = toml.loads(f.read())
 
         toml_obj = TOMLObject('', **toml_data)
 

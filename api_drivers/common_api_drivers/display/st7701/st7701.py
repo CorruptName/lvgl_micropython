@@ -157,6 +157,7 @@ TYPE_TL040WVS03 = 13
 TYPE_TL028WVC01 = 14
 TYPE_HD371001C40 = 15
 TYPE_HD458002C40 = 16
+TYPE_WAVESHARE_ESP32_P4_43 = 18
 
 
 class ST7701(rgb_display_framework.RGBDisplayDriver):
@@ -166,9 +167,9 @@ class ST7701(rgb_display_framework.RGBDisplayDriver):
     def __init__(
         self,
         data_bus,
-        spi_3wire,
         display_width,
         display_height,
+        spi_3wire=None,
         frame_buffer1=None,
         frame_buffer2=None,
         reset_pin=None,
@@ -177,6 +178,8 @@ class ST7701(rgb_display_framework.RGBDisplayDriver):
         power_on_state=STATE_HIGH,
         backlight_pin=None,
         backlight_on_state=STATE_HIGH,
+        backlight_freq=38000,
+        backlight_inverted=False,
         offset_x=0,
         offset_y=0,
         color_byte_order=BYTE_ORDER_RGB,
@@ -200,6 +203,8 @@ class ST7701(rgb_display_framework.RGBDisplayDriver):
             power_on_state=power_on_state,
             backlight_pin=backlight_pin,
             backlight_on_state=backlight_on_state,
+            backlight_freq=backlight_freq,
+            backlight_inverted=backlight_inverted,
             offset_x=offset_x,
             offset_y=offset_y,
             color_byte_order=color_byte_order,
@@ -213,12 +218,23 @@ class ST7701(rgb_display_framework.RGBDisplayDriver):
         )
 
     def _spi_3wire_init(self, type):  # NOQA
-        if type < 1 or type > 17:
+        if type < 1 or type > 18:
             raise RuntimeError('Invalid display type')
 
         mod_name = f'_st7701_type{type}'
         mod = __import__(mod_name)
         mod.init(self)
+
+    def init(self, type=None):  # NOQA
+        if self._spi_3wire is not None:
+            return super().init(type)
+
+        if not self._init_disp_bus:
+            self._init_bus()
+
+        self.reset()
+        self._spi_3wire_init(type)
+        self._initilized = True
 
     def set_noise_reduction(self, value):
         if value:

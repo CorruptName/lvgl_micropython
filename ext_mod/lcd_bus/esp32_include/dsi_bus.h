@@ -22,6 +22,7 @@
         #include "esp_lcd_panel_interface.h"
         #include "esp_lcd_panel_io.h"
         #include "esp_lcd_mipi_dsi.h"
+        #include "esp_ldo_regulator.h"
 
 
         typedef struct _mp_lcd_dsi_bus_obj_t {
@@ -41,6 +42,9 @@
             esp_lcd_dbi_io_config_t panel_io_config;
             esp_lcd_dsi_bus_config_t bus_config;
             esp_lcd_dsi_bus_handle_t bus_handle;
+            esp_ldo_channel_handle_t ldo_handle;
+            int ldo_channel;
+            int ldo_voltage;
             esp_lcd_panel_handle_t panel_handle;
             esp_lcd_dpi_panel_config_t panel_config;
 

@@ -32,6 +32,7 @@ TYPE_TL040WVS03: Final[int]
 TYPE_TL028WVC01: Final[int]
 TYPE_HD371001C40: Final[int]
 TYPE_HD458002C40: Final[int]
+TYPE_WAVESHARE_ESP32_P4_43: Final[int]
 
 class ST7701(rgb_display_framework.RGBDisplayDriver):
     _INVOFF: ClassVar[int]
@@ -42,10 +43,10 @@ class ST7701(rgb_display_framework.RGBDisplayDriver):
 
     def __init__(
         self,
-        data_bus: lcd_bus.RGBBus,
-        spi_3wire: int,
+        data_bus: lcd_bus.RGBBus | lcd_bus.DSIBus,
         display_width: int,
         display_height: int,
+        spi_3wire: int | None = None,
         frame_buffer1: memoryview | None = None,
         frame_buffer2: memoryview | None = None,
         reset_pin=None,
@@ -54,6 +55,8 @@ class ST7701(rgb_display_framework.RGBDisplayDriver):
         power_on_state: int = STATE_HIGH,
         backlight_pin=None,
         backlight_on_state: int = STATE_HIGH,
+        backlight_freq: int = 38000,
+        backlight_inverted: bool = False,
         offset_x: int = 0,
         offset_y: int = 0,
         color_byte_order: int = BYTE_ORDER_RGB,

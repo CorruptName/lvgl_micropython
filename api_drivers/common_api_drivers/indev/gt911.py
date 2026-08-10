@@ -56,6 +56,8 @@ class GT911(pointer_framework.PointerDriver):
         device,
         reset_pin=None,
         interrupt_pin=None,
+        probe_addresses=False,
+        poll_interval_ms=0,
         touch_cal=None,
         startup_rotation=pointer_framework.lv.DISPLAY_ROTATION._0,  # NOQA
         debug=False
@@ -66,6 +68,17 @@ class GT911(pointer_framework.PointerDriver):
         self._rx_mv = memoryview(self._rx_buf)
 
         self._device = device
+        self._poll_interval_ms = poll_interval_ms
+        self._last_poll = time.ticks_add(time.ticks_ms(), -poll_interval_ms)
+
+        if probe_addresses:
+            addresses = self._device._bus.scan()
+            for address in (I2C_ADDR, _ADDR2):
+                if address in addresses:
+                    self._device.dev_id = address
+                    break
+            else:
+                raise OSError('GT911 not found at 0x5D or 0x14')
 
         self.__x = 0
         self.__y = 0
@@ -98,6 +111,11 @@ class GT911(pointer_framework.PointerDriver):
             self._interrupt_pin(0)
             time.sleep_ms(50)  # NOQA
             self._interrupt_pin.init(self._interrupt_pin.IN)
+            time.sleep_ms(50)  # NOQA
+        elif self._reset_pin:
+            self._reset_pin(0)
+            time.sleep_ms(10)  # NOQA
+            self._reset_pin(1)
             time.sleep_ms(50)  # NOQA
 
         self._write_reg(_ESD_CHECK_REG, 0x00)
@@ -147,6 +165,11 @@ class GT911(pointer_framework.PointerDriver):
         return gt911_extension.GT911Extension(self, self._device)
 
     def _get_coords(self):
+        now = time.ticks_ms()
+        if time.ticks_diff(now, self._last_poll) < self._poll_interval_ms:
+            return self.__last_state, self.__x, self.__y
+        self._last_poll = now
+
         self._read_reg(_STATUS_REG, 1)
         touch_cnt = self._rx_buf[0] & 0x0F
         status = self._rx_buf[0] & 0x80

@@ -77,6 +77,8 @@ class DisplayDriver:
         power_on_state=STATE_HIGH,
         backlight_pin=None,
         backlight_on_state=STATE_HIGH,
+        backlight_freq=38000,
+        backlight_inverted=False,
         offset_x=0,
         offset_y=0,
         color_byte_order=BYTE_ORDER_RGB,
@@ -173,7 +175,10 @@ class DisplayDriver:
                     backlight_on_state = STATE_HIGH
                 else:
                     self._backlight_pin = machine.PWM(
-                        self._backlight_pin, freq=38000)
+                        self._backlight_pin,
+                        freq=backlight_freq,
+                        invert=backlight_inverted
+                    )
 
             if (
                 backlight_on_state != STATE_PWM and

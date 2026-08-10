@@ -19,6 +19,64 @@
 # LVGL binding for Micropython
 ______________________________
 
+## Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3
+
+This fork includes display and touch support for the Waveshare
+ESP32-P4-WIFI6-Touch-LCD-4.3:
+
+- 480 x 800 ST7701 display over two-lane MIPI-DSI
+- GT911 touch controller on I2C1
+- GPIO 26 inverted PWM backlight
+- GPIO 27 display reset and GPIO 23 touch reset
+
+### Build
+
+Build from Linux or WSL using an ESP-IDF 5.5 environment. Native Windows
+builds are not supported by `make.py`.
+
+```bash
+git clone https://github.com/CorruptName/lvgl_micropython.git
+cd lvgl_micropython
+git switch waveshare-esp32-p4-4.3
+python3 make.py \
+  --toml=display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.toml
+```
+
+The merged image is written to:
+
+```text
+build/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.bin
+```
+
+The tested build uses an 8 MB flash layout. The builder automatically enlarges
+the application partition and rebuilds when necessary.
+
+### Flash
+
+Build and flash are intentionally separate operations. Install esptool on the
+computer connected to the board:
+
+```powershell
+python -m pip install esptool
+```
+
+1. Connect the board over USB.
+2. Put it into manual download/boot mode.
+3. Replace `COMx` below with its serial port.
+4. Flash the already-built merged image without rebuilding:
+
+```powershell
+python -m esptool --chip esp32p4 -p COMx -b 460800 `
+  --before default-reset --after hard-reset write-flash `
+  --flash-mode dio --flash-size 8MB --flash-freq 40m `
+  --erase-all 0x0 build/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.bin
+```
+
+For Linux, use the same command with `python3` and a port such as
+`/dev/ttyACM0`; replace PowerShell backticks with backslashes.
+
+Do not disconnect or reset the board while the flash operation is running.
+
 
 This project is a spinoff of the 
 [lv_micropython](https://github.com/lvgl/lv_micropython)
