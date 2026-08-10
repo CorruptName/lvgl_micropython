@@ -182,8 +182,10 @@ class TOMLObject(metaclass=TOMLMeta):
 
                 elif child.name not in global_variable_names:
                     module = child.fqn.split('.')[0]
-                    if module not in self.imports and module not in used_imports:
+                    if module not in self.imports:
                         self.imports.append(module)
+
+                    if module not in used_imports:
                         used_imports.append(module)
                         output.extend(['', f'import {module}', ''])
 

@@ -1,9 +1,12 @@
 [MCU.esp32]
 BOARD = "ESP32_GENERIC_P4"
-flash_size = 8
+flash_size = 32
 enable_jtag_repl = 'n'
 enable_cdc_repl = 'y'
-enable_uart_repl = 'n'
+enable_uart_repl = 'y'
+CONFIG_IDF_EXPERIMENTAL_FEATURES = 'y'
+CONFIG_SPIRAM_MODE_HEX = 'y'
+CONFIG_SPIRAM_SPEED_200M = 'y'
 
 [DSIBus.display_bus]
 bus_id = 0

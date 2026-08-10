@@ -1409,7 +1409,7 @@ def build_sdkconfig(*args):
                 ):
                     base_config.append(f'CONFIG_ESPTOOLPY_FLASHFREQ_{itm}M=n')
             elif 'SPIRAM_SPEED' in arg:
-                for itm in (20, 26, 40, 80, 120):
+                for itm in (20, 26, 40, 80, 120, 200, 250):
                     base_config.append(f'CONFIG_SPIRAM_SPEED_{itm}M=n')
             elif 'FLASH_SAMPLE_MODE' in arg:
                 for itm in ('STR', 'DTR'):

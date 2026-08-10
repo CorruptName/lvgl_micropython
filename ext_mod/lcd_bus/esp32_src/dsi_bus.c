@@ -22,20 +22,11 @@
     #include "esp_lcd_panel_interface.h"
     #include "esp_lcd_panel_io.h"
     #include "esp_heap_caps.h"
+    #include "py/binary.h"
     #include "hal/lcd_types.h"
     #include "esp_lcd_mipi_dsi.h"
 
     
-    typedef struct {
-        esp_lcd_panel_t base;         // Base class of generic lcd panel
-        esp_lcd_dsi_bus_handle_t bus; // DSI bus handle
-        uint8_t virtual_channel;      // Virtual channel ID, index from 0
-        uint8_t cur_fb_index;         // Current frame buffer index
-        uint8_t num_fbs;              // Number of frame buffers
-        uint8_t *fbs[DPI_PANEL_MAX_FB_NUM]; // Frame buffers
-    } dpi_panel_t;
-
-
     mp_lcd_err_t dsi_del(mp_obj_t obj);
     mp_lcd_err_t dsi_init(mp_obj_t obj, uint16_t width, uint16_t height, uint8_t bpp, uint32_t buffer_size, bool rgb565_byte_swap, uint8_t cmd_bits, uint8_t param_bits);
     mp_lcd_err_t dsi_get_lane_count(mp_obj_t obj, uint8_t *lane_count);
@@ -46,16 +37,16 @@
 
     static bool dsi_bus_trans_done_cb(esp_lcd_panel_handle_t panel, esp_lcd_dpi_panel_event_data_t *edata, void *user_ctx)
     {
+        LCD_UNUSED(panel);
         LCD_UNUSED(edata);
 
-        dpi_panel_t *dpi_panel = __containerof(panel, dpi_panel_t, base);
         mp_lcd_dsi_bus_obj_t *self = (mp_lcd_dsi_bus_obj_t *)user_ctx;
 
-        if (!self->trans_done && dpi_panel->fbs[dpi_panel->cur_fb_index] == self->transmitting_buf) {
-           if (self->callback != mp_const_none && mp_obj_is_callable(self->callback)) {
-               cb_isr(self->callback);
-           }
-           self->trans_done = true;
+        if (!self->trans_done) {
+            if (self->callback != mp_const_none && mp_obj_is_callable(self->callback)) {
+                cb_isr(self->callback);
+            }
+            self->trans_done = true;
         }
 
         return false;
@@ -158,8 +149,6 @@
 
         self->panel_config.num_fbs = 0;
 
-        self->bus_config.pclk_hz = dpi_freq * 1000000;
-
         LCD_DEBUG_PRINT("bus_id=%d\n", self->bus_config.bus_id)
         LCD_DEBUG_PRINT("num_data_lanes=%d\n", self->bus_config.num_data_lanes)
         LCD_DEBUG_PRINT("lane_bit_rate_mbps=%d\n",self->bus_config.lane_bit_rate_mbps)
@@ -173,7 +162,6 @@
         LCD_DEBUG_PRINT("vsync_front_porch=%d\n", self->panel_config.video_timing.vsync_front_porch)
         LCD_DEBUG_PRINT("vsync_back_porch=%d\n", self->panel_config.video_timing.vsync_back_porch)
         LCD_DEBUG_PRINT("vsync_pulse_width=%d\n", self->panel_config.video_timing.vsync_pulse_width)
-        LCD_DEBUG_PRINT("pclk_hz[10]=%d\n", self->bus_config.pclk_hz)
 
         self->panel_io_handle.get_lane_count = &dsi_get_lane_count;
         self->panel_io_handle.del = &dsi_del;
@@ -244,10 +232,10 @@
             return ret;
         }
 
-        ret = esp_lcd_new_panel_io_dsi(self->bus_handle, &self->panel_io_config, &self->panel_io_handle.panel_io);
+        ret = esp_lcd_new_panel_io_dbi(self->bus_handle, &self->panel_io_config, &self->panel_io_handle.panel_io);
 
         if (ret != 0) {
-            mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%d(esp_lcd_new_panel_io_dsi)"), ret);
+            mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%d(esp_lcd_new_panel_io_dbi)"), ret);
             return ret;
         }
 
@@ -266,7 +254,7 @@
         }
 
         esp_lcd_dpi_panel_event_callbacks_t callbacks = {
-            .on_refresh_done = &dsi_bus_trans_done_cb
+            .on_color_trans_done = &dsi_bus_trans_done_cb
         };
 
         ret = esp_lcd_dpi_panel_register_event_callbacks(self->panel_handle, &callbacks, self);
@@ -276,17 +264,30 @@
             return ret;
         }
 
-        dpi_panel_t *dpi_panel = __containerof((esp_lcd_panel_t *)self->panel_handle, dpi_panel_t, base);
+        void *fb1 = NULL;
+        void *fb2 = NULL;
+        ret = esp_lcd_dpi_panel_get_frame_buffer(
+            self->panel_handle,
+            self->panel_config.num_fbs,
+            &fb1,
+            &fb2
+        );
+
+        if (ret != 0) {
+            mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%d(esp_lcd_dpi_panel_get_frame_buffer)"), ret);
+            return ret;
+        }
 
         void *buf1 = self->view1->items;
-        self->view1->items = (void *)dpi_panel->fbs[0];
-        self->view1->len = buffer_size;
+        size_t frame_buffer_size = (size_t)width * height * bpp / 8;
+        self->view1->items = fb1;
+        self->view1->len = frame_buffer_size;
         heap_caps_free(buf1);
 
         if (self->panel_config.num_fbs == 2) {
             void *buf2 = self->view2->items;
-            self->view2->items = (void *)dpi_panel->fbs[1];
-            self->view2->len = buffer_size;
+            self->view2->items = fb2;
+            self->view2->len = frame_buffer_size;
             heap_caps_free(buf2);
         }
 
@@ -386,7 +387,7 @@
 
         void *buf = heap_caps_calloc(1, 1, MALLOC_CAP_INTERNAL);
 
-        mp_obj_array_t *view = MP_OBJ_TO_PTR(mp_obj_new_memoryview(BYTEARRAY_TYPECODE, 1, buf));
+        mp_obj_array_t *view = MP_OBJ_TO_PTR(mp_obj_new_memoryview(BYTEARRAY_TYPECODE, size, buf));
         view->typecode |= 0x80; // used to indicate writable buffer
 
         uint32_t available =  (uint32_t)heap_caps_get_largest_free_block(caps);

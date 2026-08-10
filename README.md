@@ -48,7 +48,7 @@ The merged image is written to:
 build/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.bin
 ```
 
-The tested build uses an 8 MB flash layout. The builder automatically enlarges
+The tested build uses a 32 MB flash layout. The builder automatically enlarges
 the application partition and rebuilds when necessary.
 
 ### Flash
@@ -68,7 +68,7 @@ python -m pip install esptool
 ```powershell
 python -m esptool --chip esp32p4 -p COMx -b 460800 `
   --before default-reset --after hard-reset write-flash `
-  --flash-mode dio --flash-size 8MB --flash-freq 40m `
+  --flash-mode dio --flash-size 32MB --flash-freq 40m `
   --erase-all 0x0 build/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.bin
 ```
 
