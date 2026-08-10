@@ -21,13 +21,14 @@ ______________________________
 
 ## ESP32-P4 firmware
 
-This branch includes two complete merged firmware images. Both use a 32 MB
+This branch includes three complete merged firmware images. All use a 32 MB
 flash layout and must be written at offset `0x0`.
 
 | Image | Purpose | SHA-256 |
 | --- | --- | --- |
 | `firmware.bin` | Generic ESP32-P4 LVGL build with all display, input, and expander drivers | `D91E15A7D883D16EA6A85812DA7328F39ED06BC1FB34A635977E476CD0BC80DC` |
 | `firmware-waveshare-esp32-p4-4.3.bin` | Hardware-tested Waveshare 4.3-inch display and touch build | `4AB07E883A4097F42FEBBCA663E6127EA0A2B9982576D22176F8C30B79E570E1` |
+| `firmware-waveshare-esp32-p4-4.3-audio.bin` | Hardware-tested Waveshare display, touch, and onboard audio build | `56DA0E5E747B76E98E20CCE321C62D0A46516FC542195AEE06FD51CF961FB4AE` |
 
 ### Build requirements
 
@@ -59,6 +60,7 @@ ESP32-P4-WIFI6-Touch-LCD-4.3:
 - GT911 touch controller on I2C1
 - GPIO 26 inverted PWM backlight
 - GPIO 27 display reset and GPIO 23 touch reset
+- ES8311 output codec and onboard speaker
 
 Build the board-specific display, backlight, and touch configuration:
 
@@ -96,6 +98,9 @@ $FIRMWARE = "firmware.bin"
 
 # Or use the hardware-tested Waveshare 4.3-inch firmware
 # $FIRMWARE = "firmware-waveshare-esp32-p4-4.3.bin"
+
+# Or use the Waveshare firmware with onboard audio support
+# $FIRMWARE = "firmware-waveshare-esp32-p4-4.3-audio.bin"
 ```
 
 5. Flash the selected merged image:
@@ -134,6 +139,77 @@ print(display.indev.hw_size)
 ```
 
 The touch size should be `(480, 800)`.
+
+### Waveshare onboard audio
+
+The board-specific build and `firmware-waveshare-esp32-p4-4.3-audio.bin`
+include ES8311 speaker output support. At the MicroPython REPL, play the
+hardware-tested 440 Hz tone for one second:
+
+```python
+from waveshare_esp32_p4_audio_test import play_tone
+play_tone()
+```
+
+Frequency is in hertz, duration is in milliseconds, and volume ranges from 0
+to 100:
+
+```python
+play_tone(frequency=880, duration_ms=500, volume=75)
+```
+
+The current codec driver supports 16-bit stereo PCM at 16 kHz with a 384x
+master clock. Custom playback must configure `machine.I2S` with the following
+board connections:
+
+| Signal | GPIO |
+| --- | ---: |
+| I2S data out | 9 |
+| Word select | 10 |
+| I2S data in | 11 |
+| Bit clock | 12 |
+| Master clock | 13 |
+| Speaker amplifier enable | 53 |
+| I2C SDA | 7 |
+| I2C SCL | 8 |
+
+The Waveshare TOML configuration exposes the codec as
+`display.audio_device`. For custom PCM playback, create I2S before enabling
+the codec, write little-endian interleaved left/right samples, and always mute
+and disable the codec before deinitializing I2S:
+
+```python
+from machine import I2S, Pin
+import display
+from es8311 import ES8311
+
+audio = I2S(
+  0,
+  sck=Pin(12),
+  ws=Pin(10),
+  sd=Pin(9),
+  mck=Pin(13),
+  mck_multiplier=384,
+  mode=I2S.TX,
+  bits=16,
+  format=I2S.STEREO,
+  rate=16000,
+  ibuf=4096,
+)
+codec = ES8311(display.audio_device, pa_pin=53)
+codec.set_volume(100)
+
+try:
+  codec.enable()
+  audio.write(pcm_buffer)
+finally:
+  codec.disable()
+  audio.deinit()
+```
+
+`pcm_buffer` must support the buffer protocol and contain signed 16-bit stereo
+PCM. The ES8311 shares I2C1 with the GT911 touch controller; use the generated
+`display.audio_device` instead of creating another I2C bus.
 
 
 This project is a spinoff of the 
