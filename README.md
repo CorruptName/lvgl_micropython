@@ -273,6 +273,7 @@ used to be.
     - [Waveshare onboard audio](#waveshare-onboard-audio)
   - [*Important Update*](#important-update)
   - [Table of Contents](#table-of-contents)
+  - [ESP-NOW Examples](#esp-now-examples)
   - [*Supported display and touch hardware*](#supported-display-and-touch-hardware)
     - [Supported Display IC's](#supported-display-ics)
     - [Supported Touch IC's](#supported-touch-ics)
@@ -303,6 +304,14 @@ used to be.
       - [*SPI bus with SPI touch (same SPI bus)*](#spi-bus-with-spi-touch-same-spi-bus)
 - [Projects made with this Binding...](#projects-made-with-this-binding)
 
+
+
+## ESP-NOW Examples
+
+`examples/waveshare_esp32_p4_4_3/espnow_scanner.py` discovers nearby ESP-NOW
+peers and lists them on the display. It requires firmware built with the
+`C6_WIFI` board variant (ESP-NOW routed through an ESP32-C6 WiFi coprocessor)
+and at least two boards running the script to see any results.
 
 
 ## *Supported display and touch hardware*
@@ -806,6 +815,7 @@ These are options that are available across all targets, boards and board varian
 The global options are broken down into 2 secions
 
     python3 make.py {build target} {build options} {target options} {{input/output} {other}}
+
 
 <br>
 

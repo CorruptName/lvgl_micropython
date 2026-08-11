@@ -45,3 +45,23 @@ Running the script plays the default tone. Importing it only provides the
 The audio example uses the board's supported format: 16 kHz, signed 16-bit
 stereo PCM with a 384x master clock. It disables the ES8311 codec and speaker
 amplifier even if playback raises an exception.
+
+## ESP-NOW device scanner
+
+`espnow_scanner.py` discovers nearby ESP-NOW peers and lists them on screen.
+ESP-NOW has no native "scan" call, so the example broadcasts a beacon once a
+second and listens for beacons sent back by any other board running the same
+script, tracking each peer's MAC address and RSSI:
+
+```powershell
+python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/espnow_scanner.py
+```
+
+Requires at least two boards running this script to see any results, and
+firmware built with `MICROPY_PY_ESPNOW` enabled (the `C6_WIFI` board variant).
+
+## Requirements
+
+- Waveshare ESP32-P4 4.3" display with LVGL support
+- MicroPython firmware with ESP-NOW support
+- WiFi network access for scanning
