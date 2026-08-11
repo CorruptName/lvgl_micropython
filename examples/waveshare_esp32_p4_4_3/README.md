@@ -48,20 +48,41 @@ amplifier even if playback raises an exception.
 
 ## ESP-NOW device scanner
 
-`espnow_scanner.py` discovers nearby ESP-NOW peers and lists them on screen.
-ESP-NOW has no native "scan" call, so the example broadcasts a beacon once a
-second and listens for beacons sent back by any other board running the same
-script, tracking each peer's MAC address and RSSI:
+`espnow_scanner.py` discovers cooperating ESP-NOW peers and lists them on
+screen. ESP-NOW has no native "scan" call, so the example uses channel 6 to
+broadcast a beacon once a second and listens for matching beacons, tracking
+each peer's MAC address and RSSI:
 
 ```powershell
 python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/espnow_scanner.py
 ```
 
-Requires at least two boards running this script to see any results, and
-firmware built with `MICROPY_PY_ESPNOW` enabled (the `C6_WIFI` board variant).
+Run the headless companion on a second MicroPython ESP32 with ESP-NOW support:
+
+```powershell
+python -m mpremote connect COM7 run examples/waveshare_esp32_p4_4_3/espnow_beacon.py
+```
+
+Nearby phones, access points, and ESP32 boards not transmitting this beacon
+cannot be discovered. Both boards require firmware with `MICROPY_PY_ESPNOW`
+enabled, and neither board may be connected to an access point on a channel
+other than 6 while discovery is running.
+
+## WiZmote listener
+
+`wizmote_listener.py` listens for a Philips WiZ remote. It scans Wi-Fi
+channels 1 through 11 until a valid WiZmote ESP-NOW packet is received, then
+locks to that channel and displays the remote MAC, RSSI, button, and payload:
+
+```powershell
+python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/wizmote_listener.py
+```
+
+Press the remote repeatedly while the listener is scanning. Supported button
+codes are ON, OFF, Moon, brightness up/down, and presets 1 through 4.
 
 ## Requirements
 
 - Waveshare ESP32-P4 4.3" display with LVGL support
 - MicroPython firmware with ESP-NOW support
-- WiFi network access for scanning
+- A second ESP-NOW device running the companion beacon for discovery

@@ -1,9 +1,9 @@
 """ESP-NOW device discovery example for the Waveshare ESP32-P4 4.3" display.
 
-ESP-NOW has no built-in "scan" for peers, so discovery here is done by
-periodically broadcasting a beacon and listening for beacons sent back by
-any other board running this same script. Requires ESP-NOW support to be
-enabled in firmware (MICROPY_PY_ESPNOW) and a second device to discover.
+ESP-NOW has no built-in "scan" for peers, so discovery here is done on channel
+6 by periodically broadcasting a beacon and listening for matching beacons.
+Run espnow_beacon.py on a second MicroPython ESP32 to make it discoverable.
+Requires ESP-NOW support to be enabled in firmware (MICROPY_PY_ESPNOW).
 """
 import display  # Initializes the configured display, touch input, and task handler.
 import lvgl as lv
@@ -13,6 +13,7 @@ import espnow
 BROADCAST = b"\xff\xff\xff\xff\xff\xff"
 BEACON = b"ESPNOW-HELLO"
 BEACON_PERIOD_MS = 1000
+CHANNEL = 6
 
 sta = None
 e = None
@@ -27,10 +28,11 @@ def init_espnow():
     sta = network.WLAN(network.WLAN.IF_STA)
     sta.active(True)
     sta.disconnect()
+    sta.config(channel=CHANNEL)
 
     e = espnow.ESPNow()
     e.active(True)
-    e.add_peer(BROADCAST)
+    e.add_peer(BROADCAST, channel=CHANNEL)
 
     my_mac = sta.config("mac")
 
@@ -56,8 +58,13 @@ def poll_timer_cb(timer):
 
     e.send(BROADCAST, BEACON, False)
 
-    mac, msg = e.recv(0)
-    if mac is not None and msg == BEACON and mac != my_mac:
+    while True:
+        mac, msg = e.recv(0)
+        if mac is None:
+            break
+        if msg != BEACON or mac == my_mac:
+            continue
+
         is_new = mac not in devices
         devices[mac] = e.peers_table.get(mac, [None])[0]
         if is_new:
@@ -83,7 +90,7 @@ def start_scan(event):
 
     running = True
     button_label.set_text("Stop")
-    status_label.set_text("Scanning...")
+    status_label.set_text("Scanning on channel %d..." % CHANNEL)
 
 
 def stop_scan(event):
@@ -116,7 +123,7 @@ heading.align(lv.ALIGN.CENTER, 0, -90)
 heading.set_style_text_font(lv.font_montserrat_16, 0)
 
 status_label = lv.label(screen)
-status_label.set_text("Press Start Scan to begin")
+status_label.set_text("Peers must run this example on channel %d" % CHANNEL)
 status_label.align(lv.ALIGN.CENTER, 0, -50)
 status_label.set_style_text_font(lv.font_montserrat_12, 0)
 
