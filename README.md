@@ -21,7 +21,7 @@ ______________________________
 
 ## ESP32-P4 firmware
 
-This branch includes four complete merged P4 firmware images. All use a 32 MB
+This branch includes five complete merged P4 firmware images. All use a 32 MB
 flash layout and must be written at offset `0x0`.
 
 | Image | Purpose | SHA-256 |
@@ -30,6 +30,7 @@ flash layout and must be written at offset `0x0`.
 | `firmware-waveshare-esp32-p4-4.3.bin` | Hardware-tested Waveshare 4.3-inch display and touch build | `4AB07E883A4097F42FEBBCA663E6127EA0A2B9982576D22176F8C30B79E570E1` |
 | `firmware-waveshare-esp32-p4-4.3-audio.bin` | Hardware-tested Waveshare display, touch, and onboard audio build | `56DA0E5E747B76E98E20CCE321C62D0A46516FC542195AEE06FD51CF961FB4AE` |
 | `firmware-waveshare-esp32-p4-4.3-espnow.bin` | **Current recommended build:** display, touch, audio, Hosted Wi-Fi, and ESP-NOW | `A950F2AD50B0AF3B4046023309DBEF79CBFFCEFBE8CFD839DF676E038ACF7539` |
+| `firmware-esp32-p4-c6-wifi-espnow-headless.bin` | Headless build with Hosted Wi-Fi and ESP-NOW; no Waveshare display, touch, or audio configuration | `DA73A9DADA74C25EBC4DF85F0FFE3DCFFA9FADE613E9D8BBFF996E51757CCE13` |
 
 The ESP-NOW image was built from parent commit `84745c2` with MicroPython
 commit `43eedf7` and ESP-Hosted commit `dd95bdf`. The merged image programs the
@@ -57,6 +58,29 @@ input, and I/O-expander drivers:
 python3 make.py esp32 BOARD=ESP32_GENERIC_P4 --flash-size=32 \
   DISPLAY=all INDEV=all EXPANDER=all
 ```
+
+### Headless ESP-NOW build
+
+Build the `C6_WIFI` variant without a display TOML or Waveshare audio manifest:
+
+```bash
+python3 make.py esp32 \
+  BOARD=ESP32_GENERIC_P4 BOARD_VARIANT=C6_WIFI --flash-size=32 \
+  --enable-cdc-repl=y --enable-jtag-repl=n --enable-uart-repl=y
+```
+
+This retains MicroPython, the base LVGL runtime, Hosted Wi-Fi, and the standard
+`network` and `espnow` modules. It does not freeze a generated `display.py`,
+ST7701, GT911, ES8311, or Waveshare audio configuration. The merged image is:
+
+```text
+build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
+```
+
+That generated filename is also used by the full Waveshare TOML build. Rename
+or copy it before running another build if both variants are needed. The
+precompiled headless image is
+`firmware-esp32-p4-c6-wifi-espnow-headless.bin`.
 
 ### Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3
 
@@ -106,6 +130,9 @@ python -m pip install esptool
 # Current Waveshare display, touch, audio, Wi-Fi, and ESP-NOW firmware
 $FIRMWARE = "firmware-waveshare-esp32-p4-4.3-espnow.bin"
 
+# Or use the headless Wi-Fi and ESP-NOW build
+# $FIRMWARE = "firmware-esp32-p4-c6-wifi-espnow-headless.bin"
+
 # Older display/touch-only build
 # $FIRMWARE = "firmware-waveshare-esp32-p4-4.3.bin"
 
@@ -124,6 +151,10 @@ python -m esptool --chip esp32p4 -p COMx -b 460800 `
 
 To flash an image you just built, set `$FIRMWARE` to
 `build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin`.
+
+The headless and full Waveshare ESP-NOW images use the same P4 flash command.
+Only the selected `$FIRMWARE` path changes. Neither image updates the C6; the
+matching ESP-NOW-enabled ESP-Hosted C6 firmware must already be installed.
 
 On Linux, select a serial port and firmware path, then run:
 
