@@ -21,7 +21,7 @@ ______________________________
 
 ## ESP32-P4 firmware
 
-This branch includes three complete merged firmware images. All use a 32 MB
+This branch includes four complete merged P4 firmware images. All use a 32 MB
 flash layout and must be written at offset `0x0`.
 
 | Image | Purpose | SHA-256 |
@@ -29,6 +29,13 @@ flash layout and must be written at offset `0x0`.
 | `firmware.bin` | Generic ESP32-P4 LVGL build with all display, input, and expander drivers | `D91E15A7D883D16EA6A85812DA7328F39ED06BC1FB34A635977E476CD0BC80DC` |
 | `firmware-waveshare-esp32-p4-4.3.bin` | Hardware-tested Waveshare 4.3-inch display and touch build | `4AB07E883A4097F42FEBBCA663E6127EA0A2B9982576D22176F8C30B79E570E1` |
 | `firmware-waveshare-esp32-p4-4.3-audio.bin` | Hardware-tested Waveshare display, touch, and onboard audio build | `56DA0E5E747B76E98E20CCE321C62D0A46516FC542195AEE06FD51CF961FB4AE` |
+| `firmware-waveshare-esp32-p4-4.3-espnow.bin` | **Current recommended build:** display, touch, audio, Hosted Wi-Fi, and ESP-NOW | `A950F2AD50B0AF3B4046023309DBEF79CBFFCEFBE8CFD839DF676E038ACF7539` |
+
+The ESP-NOW image was built from parent commit `84745c2` with MicroPython
+commit `43eedf7` and ESP-Hosted commit `dd95bdf`. The merged image programs the
+ESP32-P4 only. ESP-NOW also requires the board's ESP32-C6 Wi-Fi coprocessor to
+run the matching ESP-Hosted slave firmware; a stock C6 image does not provide
+the custom ESP-NOW RPC used by this build.
 
 ### Build requirements
 
@@ -69,14 +76,17 @@ python3 make.py \
   --toml=display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.toml
 ```
 
-Both build commands write their merged image to:
+This TOML selects `ESP32_GENERIC_P4`, the `C6_WIFI` variant, 32 MB flash,
+display, touch, audio, Hosted Wi-Fi, and MicroPython ESP-NOW support. It writes
+the complete merged P4 image to:
 
 ```text
-build/lvgl_micropy_ESP32_GENERIC_P4-32.bin
+build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
 ```
 
-Copy or rename that file after each build if you need to keep both locally. The
-two distinctly named firmware files in the repository are already separated.
+The generic command writes `build/lvgl_micropy_ESP32_GENERIC_P4-32.bin`.
+`firmware-waveshare-esp32-p4-4.3-espnow.bin` is a copy of the hardware-tested
+TOML build output.
 
 ### Flash
 
@@ -93,13 +103,13 @@ python -m pip install esptool
 4. Set `FIRMWARE` to the image you want to flash:
 
 ```powershell
-# Generic ESP32-P4 LVGL firmware
-$FIRMWARE = "firmware.bin"
+# Current Waveshare display, touch, audio, Wi-Fi, and ESP-NOW firmware
+$FIRMWARE = "firmware-waveshare-esp32-p4-4.3-espnow.bin"
 
-# Or use the hardware-tested Waveshare 4.3-inch firmware
+# Older display/touch-only build
 # $FIRMWARE = "firmware-waveshare-esp32-p4-4.3.bin"
 
-# Or use the Waveshare firmware with onboard audio support
+# Older display/touch/audio build without ESP-NOW proxy support
 # $FIRMWARE = "firmware-waveshare-esp32-p4-4.3-audio.bin"
 ```
 
@@ -107,21 +117,21 @@ $FIRMWARE = "firmware.bin"
 
 ```powershell
 python -m esptool --chip esp32p4 -p COMx -b 460800 `
-  --before default-reset --after hard-reset write-flash `
+  --before no-reset --after hard-reset write-flash `
   --flash-mode dio --flash-size 32MB --flash-freq 40m `
   --erase-all 0x0 $FIRMWARE
 ```
 
 To flash an image you just built, set `$FIRMWARE` to
-`build/lvgl_micropy_ESP32_GENERIC_P4-32.bin`.
+`build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin`.
 
 On Linux, select a serial port and firmware path, then run:
 
 ```bash
 PORT=/dev/ttyACM0
-FIRMWARE=firmware-waveshare-esp32-p4-4.3.bin
+FIRMWARE=firmware-waveshare-esp32-p4-4.3-espnow.bin
 python3 -m esptool --chip esp32p4 -p "$PORT" -b 460800 \
-  --before default-reset --after hard-reset write-flash \
+  --before no-reset --after hard-reset write-flash \
   --flash-mode dio --flash-size 32MB --flash-freq 40m \
   --erase-all 0x0 "$FIRMWARE"
 ```
