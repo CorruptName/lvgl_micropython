@@ -2549,7 +2549,8 @@ class SDCard(AbstractBlockDev):
         data_pins: tuple[int] | None = None,
         spi_bus: SPI.Bus | SPI.DualBus | SPI.QuadBus | SPI.OctalBus | None = None,
         cs: int = -1,
-        freq: int = 20000000
+        freq: int = 20000000,
+        ldo_chan: int = -1
     ):
         """
         This class provides access to SD or MMC storage cards using either
@@ -2603,4 +2604,8 @@ class SDCard(AbstractBlockDev):
 
         :param freq: Speed/frequency in bits/sec
         :type freq: int
+
+        :param ldo_chan: ESP32 on-chip LDO channel that supplies the SDMMC I/O
+                 voltage, or -1 when no power-control driver is needed.
+        :type ldo_chan: int
         """

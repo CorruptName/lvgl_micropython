@@ -21,7 +21,7 @@ ______________________________
 
 ## ESP32-P4 firmware
 
-This branch includes five complete merged P4 firmware images. All use a 32 MB
+This branch includes six complete merged P4 firmware images. All use a 32 MB
 flash layout and must be written at offset `0x0`.
 
 | Image | Purpose | SHA-256 |
@@ -29,10 +29,11 @@ flash layout and must be written at offset `0x0`.
 | `firmware.bin` | Generic ESP32-P4 LVGL build with all display, input, and expander drivers | `D91E15A7D883D16EA6A85812DA7328F39ED06BC1FB34A635977E476CD0BC80DC` |
 | `firmware-waveshare-esp32-p4-4.3.bin` | Hardware-tested Waveshare 4.3-inch display and touch build | `4AB07E883A4097F42FEBBCA663E6127EA0A2B9982576D22176F8C30B79E570E1` |
 | `firmware-waveshare-esp32-p4-4.3-audio.bin` | Hardware-tested Waveshare display, touch, and onboard audio build | `56DA0E5E747B76E98E20CCE321C62D0A46516FC542195AEE06FD51CF961FB4AE` |
-| `firmware-waveshare-esp32-p4-4.3-espnow.bin` | **Current recommended build:** display, touch, audio, Hosted Wi-Fi, and ESP-NOW | `A950F2AD50B0AF3B4046023309DBEF79CBFFCEFBE8CFD839DF676E038ACF7539` |
+| `firmware-waveshare-esp32-p4-4.3-espnow.bin` | Display, touch, audio, Hosted Wi-Fi, and ESP-NOW | `A950F2AD50B0AF3B4046023309DBEF79CBFFCEFBE8CFD839DF676E038ACF7539` |
+| `firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin` | **Current recommended build:** display, touch, audio, Hosted Wi-Fi, ESP-NOW, and SDMMC power control | `DE15BA706122AD50403EAD62A817AB4303A277E6BA94C7F5B3C8B0E3727DBFF3` |
 | `firmware-esp32-p4-c6-wifi-espnow-headless.bin` | Headless build with Hosted Wi-Fi and ESP-NOW; no Waveshare display, touch, or audio configuration | `DA73A9DADA74C25EBC4DF85F0FFE3DCFFA9FADE613E9D8BBFF996E51757CCE13` |
 
-The ESP-NOW image was built from parent commit `84745c2` with MicroPython
+The ESP-NOW images were built from parent commit `84745c2` with MicroPython
 commit `43eedf7` and ESP-Hosted commit `dd95bdf`. The merged image programs the
 ESP32-P4 only. ESP-NOW also requires the board's ESP32-C6 Wi-Fi coprocessor to
 run the matching ESP-Hosted slave firmware; a stock C6 image does not provide
@@ -109,8 +110,8 @@ build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
 ```
 
 The generic command writes `build/lvgl_micropy_ESP32_GENERIC_P4-32.bin`.
-`firmware-waveshare-esp32-p4-4.3-espnow.bin` is a copy of the hardware-tested
-TOML build output.
+`firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin` is a copy of the
+hardware-tested TOML build output.
 
 ### Flash
 
@@ -127,8 +128,8 @@ python -m pip install esptool
 4. Set `FIRMWARE` to the image you want to flash:
 
 ```powershell
-# Current Waveshare display, touch, audio, Wi-Fi, and ESP-NOW firmware
-$FIRMWARE = "firmware-waveshare-esp32-p4-4.3-espnow.bin"
+# Current Waveshare display, touch, audio, Wi-Fi, ESP-NOW, and SD card firmware
+$FIRMWARE = "firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin"
 
 # Or use the headless Wi-Fi and ESP-NOW build
 # $FIRMWARE = "firmware-esp32-p4-c6-wifi-espnow-headless.bin"
@@ -160,7 +161,7 @@ On Linux, select a serial port and firmware path, then run:
 
 ```bash
 PORT=/dev/ttyACM0
-FIRMWARE=firmware-waveshare-esp32-p4-4.3-espnow.bin
+FIRMWARE=firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin
 python3 -m esptool --chip esp32p4 -p "$PORT" -b 460800 \
   --before no-reset --after hard-reset write-flash \
   --flash-mode dio --flash-size 32MB --flash-freq 40m \

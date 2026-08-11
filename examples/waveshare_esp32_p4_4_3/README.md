@@ -2,7 +2,7 @@
 
 These examples target the Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3 firmware on
 the `waveshare-esp32-p4-4.3` branch. Flash the current
-`firmware-waveshare-esp32-p4-4.3-espnow.bin` image at offset `0x0` before
+`firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin` image at offset `0x0` before
 running them. The root README contains the complete build and flash commands.
 
 Install `mpremote` on the computer connected to the board:
@@ -81,6 +81,44 @@ python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/wizmote_lis
 
 Press the remote repeatedly while the listener is scanning. Supported button
 codes are ON, OFF, Moon, brightness up/down, and presets 1 through 4.
+
+## microSD card
+
+`sdcard_test.py` enables the board's SDMMC I/O supply on LDO channel 4 and
+uses the 4-bit slot 0 interface. It reports card and filesystem capacity,
+lists the root directory, and performs a small write/read/delete test:
+
+```powershell
+python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/sdcard_test.py
+```
+
+The test never formats the card. It unmounts the filesystem and disables the
+SD I/O supply before exiting, including after an error.
+
+## Internal RTC
+
+`rtc_test.py` reads the ESP32-P4 internal RTC twice and verifies that it
+advances. It does not change the current date or time:
+
+```powershell
+python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/rtc_test.py
+```
+
+The board's vendor BSP lists only the ES8311 codec and GT911 touch controller
+on I2C and does not define a separate external RTC. The board schematic connects
+the RTC battery header directly to the ESP32-P4 `VBAT` pin, so it backs up the
+P4's internal RTC and low-power domain in hardware.
+
+Only connect a compatible rechargeable RTC battery with the correct polarity.
+Waveshare explicitly states that this header does not support non-rechargeable
+RTC batteries.
+
+To test battery retention, install the rechargeable RTC battery, set
+`machine.RTC()` to a known time, then completely remove USB and main-battery
+power for at least one minute. Restore main power and run `rtc_test.py`; the
+reported time should include the interval spent without main power. A reset-only
+test is insufficient because the RTC normally survives resets without the
+backup battery.
 
 ## Requirements
 
