@@ -1,0 +1,5 @@
+*.bin
+*.sha256
+*.size
+c6_ota_qstr.txt
+c6_ota_symbols.txt

@@ -660,7 +660,7 @@ def has_correct_idf():
     return (
         cached_idf_version is not None and (
             cached_idf_version == IDF_VER or
-            cached_idf_version == IDF_VER.rsplit('.', 1)[0]
+            cached_idf_version.rsplit('.', 1)[0] == IDF_VER.rsplit('.', 1)[0]
         )
     )
 

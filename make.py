@@ -180,6 +180,12 @@ argParser.add_argument(
     default=False,
     action='store_true'
 )
+argParser.add_argument(
+    '--incremental',
+    dest='incremental',
+    default=False,
+    action='store_true'
+)
 
 
 args2, extra_args = argParser.parse_known_args(extra_args)
@@ -192,6 +198,7 @@ displays = args2.displays
 indevs = args2.indevs
 expanders = args2.expanders
 imus = args2.imus
+incremental = args2.incremental
 builder.DO_NOT_SCRUB_BUILD_FOLDER = args2.no_scrub
 
 if imus:
@@ -307,7 +314,7 @@ if __name__ == '__main__':
     if clean:
         print('Cleaning build....')
         mod.force_clean(True)
-    else:
+    elif not incremental:
         mod.clean()
 
     if not os.path.exists('lib/micropython/mpy_cross/build/mpy-cross'):
