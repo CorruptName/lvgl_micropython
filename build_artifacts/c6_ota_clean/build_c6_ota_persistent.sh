@@ -7,7 +7,7 @@ test "$(git -C "${IDF_PATH}" describe --tags --always)" = v5.5.1
 test -d "${worktree}/.git"
 cd "${worktree}"
 test "$(git rev-parse HEAD)" = e9f054a969b4dba71a2cd4e5eacb48d051dd2f45
-rm -f /out/firmware-waveshare-esp32-p4-4.3-c6-ota.bin
+rm -f /out/waveshare-esp32-p4-4.3-c6-ota.bin
 
 if grep -Fq "cached_idf_version == IDF_VER.rsplit('.', 1)[0]" builder/esp32.py; then
     sed -i \
@@ -73,7 +73,7 @@ if nm -u "${elf}" | grep -E 'esp_hosted_slave_ota_(begin|write|end|activate)'; t
 fi
 nm "${elf}" | grep -E 'esp_hosted_slave_ota_(begin|write|end|activate)' > /out/c6_ota_symbols.txt
 
-cp "${firmware}" /out/firmware-waveshare-esp32-p4-4.3-c6-ota.bin
+cp "${firmware}" /out/waveshare-esp32-p4-4.3-c6-ota.bin
 sha256sum "${firmware}" | tee /out/firmware.sha256
 stat -c '%s bytes' "${firmware}" | tee /out/firmware.size
 echo C6_OTA_PERSISTENT_BUILD_OK

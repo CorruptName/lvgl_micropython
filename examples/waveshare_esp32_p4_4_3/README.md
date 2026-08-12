@@ -2,7 +2,7 @@
 
 These examples target the Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3 firmware on
 the `waveshare-esp32-p4-4.3` branch. Flash the current
-`firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin` image at offset `0x0` before
+`waveshare-esp32-p4-4.3-espnow.bin` image at offset `0x0` before
 running them. The root README contains the complete build and flash commands.
 
 Install `mpremote` on the computer connected to the board:

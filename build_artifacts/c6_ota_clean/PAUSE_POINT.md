@@ -4,7 +4,7 @@ Status recorded on 2026-08-12.
 
 ## Verified Working Pair
 
-- P4 firmware: `firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin`
+- P4 firmware: `waveshare-esp32-p4-4.3-espnow.bin`
 - P4 SHA-256: `DE15BA706122AD50403EAD62A817AB4303A277E6BA94C7F5B3C8B0E3727DBFF3`
 - P4 size: 3,511,744 bytes
 - C6 full image: `slave/build-direct-safe/c6-espnow-full.bin`

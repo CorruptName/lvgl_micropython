@@ -2,6 +2,14 @@ import display  # Initializes the configured display, touch input, and task hand
 import lvgl as lv
 
 
+
+current_backlight = display.get_backlight()
+
+
+display.set_backlight(100)  # Set backlight to 100% for better visibility
+
+
+
 click_count = 0
 
 

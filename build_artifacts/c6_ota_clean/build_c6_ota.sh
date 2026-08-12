@@ -66,7 +66,7 @@ if nm -u "${elf}" | grep -E 'esp_hosted_slave_ota_(begin|write|end|activate)'; t
 fi
 nm "${elf}" | grep -E 'esp_hosted_slave_ota_(begin|write|end|activate)' > /out/c6_ota_symbols.txt
 
-cp "${firmware}" /out/firmware-waveshare-esp32-p4-4.3-c6-ota.bin
+cp "${firmware}" /out/waveshare-esp32-p4-4.3-c6-ota.bin
 sha256sum "${firmware}" | tee /out/firmware.sha256
 stat -c '%s bytes' "${firmware}" | tee /out/firmware.size
 echo C6_OTA_CLEAN_BUILD_OK

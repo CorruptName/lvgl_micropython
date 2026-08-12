@@ -27,6 +27,7 @@ elf=build/network_adapter.elf
 test -f "${application}"
 grep -q '^CONFIG_ESP_HOSTED_ENABLE_PEER_DATA_TRANSFER=y$' sdkconfig
 grep -q '^CONFIG_ESP_HOSTED_ENABLE_ESPNOW=y$' sdkconfig
+grep -q '^CONFIG_ESP_HOSTED_ALLOW_FULL_APP_DESC=y$' sdkconfig
 nm "${elf}" > /tmp/network_adapter_symbols.txt
 grep -q 'esp_hosted_espnow_init' /tmp/network_adapter_symbols.txt
 grep -q ' esp_now_send$' /tmp/network_adapter_symbols.txt

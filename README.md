@@ -21,17 +21,15 @@ ______________________________
 
 ## ESP32-P4 firmware
 
-This branch includes six complete merged P4 firmware images. All use a 32 MB
+This branch includes four complete merged P4 firmware images. All use a 32 MB
 flash layout and must be written at offset `0x0`.
 
 | Image | Purpose | SHA-256 |
 | --- | --- | --- |
-| `firmware.bin` | Generic ESP32-P4 LVGL build with all display, input, and expander drivers | `D91E15A7D883D16EA6A85812DA7328F39ED06BC1FB34A635977E476CD0BC80DC` |
-| `firmware-waveshare-esp32-p4-4.3.bin` | Hardware-tested Waveshare 4.3-inch display and touch build | `4AB07E883A4097F42FEBBCA663E6127EA0A2B9982576D22176F8C30B79E570E1` |
-| `firmware-waveshare-esp32-p4-4.3-audio.bin` | Hardware-tested Waveshare display, touch, and onboard audio build | `56DA0E5E747B76E98E20CCE321C62D0A46516FC542195AEE06FD51CF961FB4AE` |
-| `firmware-waveshare-esp32-p4-4.3-espnow.bin` | Display, touch, audio, Hosted Wi-Fi, and ESP-NOW | `A950F2AD50B0AF3B4046023309DBEF79CBFFCEFBE8CFD839DF676E038ACF7539` |
-| `firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin` | **Current recommended build:** display, touch, audio, Hosted Wi-Fi, ESP-NOW, and SDMMC power control | `DE15BA706122AD50403EAD62A817AB4303A277E6BA94C7F5B3C8B0E3727DBFF3` |
-| `firmware-esp32-p4-c6-wifi-espnow-headless.bin` | Headless build with Hosted Wi-Fi and ESP-NOW; no Waveshare display, touch, or audio configuration | `DA73A9DADA74C25EBC4DF85F0FFE3DCFFA9FADE613E9D8BBFF996E51757CCE13` |
+| `esp32-p4.bin` | Generic ESP32-P4 LVGL and SD-card build with all display, input, and expander drivers | `D91E15A7D883D16EA6A85812DA7328F39ED06BC1FB34A635977E476CD0BC80DC` |
+| `esp32-p4-espnow.bin` | Generic ESP32-P4 LVGL, SD-card, Hosted Wi-Fi, and ESP-NOW build | `DA73A9DADA74C25EBC4DF85F0FFE3DCFFA9FADE613E9D8BBFF996E51757CCE13` |
+| `waveshare-esp32-p4-4.3.bin` | Waveshare display, touch, audio, RTC, and SD-card build without ESP-NOW | `56DA0E5E747B76E98E20CCE321C62D0A46516FC542195AEE06FD51CF961FB4AE` |
+| `waveshare-esp32-p4-4.3-espnow.bin` | Waveshare display, touch, audio, RTC, SD-card, Hosted Wi-Fi, and ESP-NOW build | `DE15BA706122AD50403EAD62A817AB4303A277E6BA94C7F5B3C8B0E3727DBFF3` |
 
 The ESP-NOW images were built from parent commit `84745c2` with MicroPython
 commit `43eedf7` and ESP-Hosted commit `dd95bdf`. The merged image programs the
@@ -80,8 +78,7 @@ build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
 
 That generated filename is also used by the full Waveshare TOML build. Rename
 or copy it before running another build if both variants are needed. The
-precompiled headless image is
-`firmware-esp32-p4-c6-wifi-espnow-headless.bin`.
+precompiled generic ESP-NOW image is `esp32-p4-espnow.bin`.
 
 ### Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3
 
@@ -110,7 +107,7 @@ build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
 ```
 
 The generic command writes `build/lvgl_micropy_ESP32_GENERIC_P4-32.bin`.
-`firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin` is a copy of the
+`waveshare-esp32-p4-4.3-espnow.bin` is a copy of the
 hardware-tested TOML build output.
 
 ### Flash
@@ -128,17 +125,17 @@ python -m pip install esptool
 4. Set `FIRMWARE` to the image you want to flash:
 
 ```powershell
-# Current Waveshare display, touch, audio, Wi-Fi, ESP-NOW, and SD card firmware
-$FIRMWARE = "firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin"
+# Waveshare display, touch, audio, RTC, SD card, Wi-Fi, and ESP-NOW
+$FIRMWARE = "waveshare-esp32-p4-4.3-espnow.bin"
 
-# Or use the headless Wi-Fi and ESP-NOW build
-# $FIRMWARE = "firmware-esp32-p4-c6-wifi-espnow-headless.bin"
+# Waveshare without ESP-NOW
+# $FIRMWARE = "waveshare-esp32-p4-4.3.bin"
 
-# Older display/touch-only build
-# $FIRMWARE = "firmware-waveshare-esp32-p4-4.3.bin"
+# Generic ESP32-P4 with ESP-NOW
+# $FIRMWARE = "esp32-p4-espnow.bin"
 
-# Older display/touch/audio build without ESP-NOW proxy support
-# $FIRMWARE = "firmware-waveshare-esp32-p4-4.3-audio.bin"
+# Generic ESP32-P4 without ESP-NOW
+# $FIRMWARE = "esp32-p4.bin"
 ```
 
 5. Flash the selected merged image:
@@ -161,7 +158,7 @@ On Linux, select a serial port and firmware path, then run:
 
 ```bash
 PORT=/dev/ttyACM0
-FIRMWARE=firmware-waveshare-esp32-p4-4.3-espnow-sdcard.bin
+FIRMWARE=waveshare-esp32-p4-4.3-espnow.bin
 python3 -m esptool --chip esp32p4 -p "$PORT" -b 460800 \
   --before no-reset --after hard-reset write-flash \
   --flash-mode dio --flash-size 32MB --flash-freq 40m \
@@ -184,7 +181,7 @@ The touch size should be `(480, 800)`.
 
 ### Waveshare onboard audio
 
-The board-specific build and `firmware-waveshare-esp32-p4-4.3-audio.bin`
+The board-specific build and `waveshare-esp32-p4-4.3.bin`
 include ES8311 speaker output support. At the MicroPython REPL, play the
 hardware-tested 440 Hz tone for one second:
 
