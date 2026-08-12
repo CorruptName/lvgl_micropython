@@ -3,9 +3,11 @@ set -euo pipefail
 
 worktree=/workspace/lvgl_micropython
 test "${IDF_PATH}" = /opt/esp/idf
+test "$(git -C "${IDF_PATH}" describe --tags --always)" = v5.5.1
 test -d "${worktree}/.git"
 cd "${worktree}"
 test "$(git rev-parse HEAD)" = e9f054a969b4dba71a2cd4e5eacb48d051dd2f45
+rm -f /out/firmware-waveshare-esp32-p4-4.3-c6-ota.bin
 
 if grep -Fq "cached_idf_version == IDF_VER.rsplit('.', 1)[0]" builder/esp32.py; then
     sed -i \
@@ -28,6 +30,8 @@ cp /source/lib/micropython/extmod/nimble/modbluetooth_nimble.c \
     lib/micropython/extmod/nimble/modbluetooth_nimble.c
 cp /source/lib/micropython/ports/esp32/machine_sdcard.c \
     lib/micropython/ports/esp32/machine_sdcard.c
+cp /source/lib/micropython/ports/esp32/main/idf_component.yml \
+    lib/micropython/ports/esp32/main/idf_component.yml
 mkdir -p ext_mod/c6_ota examples/waveshare_esp32_p4_4_3 stubs
 cp /source/ext_mod/c6_ota/c6_ota.c ext_mod/c6_ota/c6_ota.c
 cp /source/ext_mod/c6_ota/micropython.cmake ext_mod/c6_ota/micropython.cmake
@@ -47,7 +51,6 @@ python3 make.py esp32 \
     BOARD=ESP32_GENERIC_P4 \
     BOARD_VARIANT=C6_WIFI \
     --flash-size=32 \
-    --incremental \
     --toml=display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.toml
 
 qstr=lib/micropython/ports/esp32/build-ESP32_GENERIC_P4-C6_WIFI/genhdr/qstrdefs.generated.h
