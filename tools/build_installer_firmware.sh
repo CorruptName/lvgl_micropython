@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Clean CI/release producer for the complete four-image installer set.
+# All images reserve a 5 MiB app partition (VFS at 0x510000). Publish these
+# outputs only from committed source after testing the exact candidate bundle.
 set -euo pipefail
 
 OUTPUT_DIR="${1:-build_artifacts/installer}"
@@ -7,7 +10,8 @@ HOSTED_COMMIT="dd95bdf3316fc8c6110b387855033a26c0aa2447"
 HOSTED_PATH="lib/micropython/ports/esp32/components/espressif__esp_hosted"
 
 mkdir -p "$OUTPUT_DIR"
-rm -f "$OUTPUT_DIR"/*.bin "$OUTPUT_DIR"/*.sha256 "$OUTPUT_DIR"/firmware-release.json
+rm -f "$OUTPUT_DIR"/*.bin "$OUTPUT_DIR"/*.sha256 \
+    "$OUTPUT_DIR"/firmware-release.json "$OUTPUT_DIR"/SHA256SUMS
 
 if [[ ! -d "$HOSTED_PATH/.git" ]]; then
     rm -rf "$HOSTED_PATH"

@@ -21,21 +21,29 @@ ______________________________
 
 ## ESP32-P4 firmware
 
-This branch includes four complete merged P4 firmware images. All use a 32 MB
-flash layout and must be written at offset `0x0`.
+Installer-compatible P4 firmware is published as an immutable, coordinated
+four-image set from committed `firmware-v*` tags:
 
-| Image | Purpose | SHA-256 |
-| --- | --- | --- |
-| `esp32-p4.bin` | Generic ESP32-P4 LVGL and SD-card build with all display, input, and expander drivers | `D91E15A7D883D16EA6A85812DA7328F39ED06BC1FB34A635977E476CD0BC80DC` |
-| `esp32-p4-espnow.bin` | Generic ESP32-P4 LVGL, SD-card, Hosted Wi-Fi, and ESP-NOW build | `DA73A9DADA74C25EBC4DF85F0FFE3DCFFA9FADE613E9D8BBFF996E51757CCE13` |
-| `waveshare-esp32-p4-4.3.bin` | Waveshare display, touch, audio, RTC, and SD-card build without ESP-NOW | `56DA0E5E747B76E98E20CCE321C62D0A46516FC542195AEE06FD51CF961FB4AE` |
-| `waveshare-esp32-p4-4.3-espnow.bin` | Waveshare display, touch, audio, RTC, SD-card, Hosted Wi-Fi, and ESP-NOW build | `DE15BA706122AD50403EAD62A817AB4303A277E6BA94C7F5B3C8B0E3727DBFF3` |
+| Artifact ID | Release asset | Target | ESP-NOW |
+| --- | --- | --- | --- |
+| `dev-standard` | `esp32-p4.bin` | Generic ESP32-P4 | No |
+| `dev-espnow` | `esp32-p4-espnow.bin` | Generic ESP32-P4 with C6 radio | Yes |
+| `waveshare-standard` | `waveshare-esp32-p4-4.3.bin` | Waveshare 4.3-inch | No |
+| `waveshare-espnow` | `waveshare-esp32-p4-4.3-espnow.bin` | Waveshare 4.3-inch with C6 radio | Yes |
 
-The ESP-NOW images were built from parent commit `84745c2` with MicroPython
-commit `43eedf7` and ESP-Hosted commit `dd95bdf`. The merged image programs the
-ESP32-P4 only. ESP-NOW also requires the board's ESP32-C6 Wi-Fi coprocessor to
-run the matching ESP-Hosted slave firmware; a stock C6 image does not provide
-the custom ESP-NOW RPC used by this build.
+Each producer release also includes individual `.sha256` files,
+`SHA256SUMS`, and `firmware-release.json`. The release index records exact
+producer, MicroPython, LVGL, ESP-IDF, and ESP-Hosted commits. Verify the named
+release's `SHA256SUMS`; do not rely on loose root-level binaries or mutable
+"latest build" files for provisioning.
+
+All four images use 32 MB flash, a fixed 5 MiB application partition beginning
+at `0x10000`, and FAT VFS beginning at `0x510000`. Fixing the partition layout
+prevents firmware-size changes from moving and corrupting the filesystem.
+
+The ESP-NOW images program the ESP32-P4 only and require the matching custom
+ESP-Hosted firmware on the ESP32-C6. Use the coordinated
+`esp32-p4-micropython-installer` package to provision and verify both devices.
 
 ### Build requirements
 
@@ -43,8 +51,7 @@ Building from source is optional. Use Linux or WSL with an ESP-IDF 5.5.1
 environment. Native Windows builds are not supported by `make.py`.
 
 ```bash
-git clone --branch waveshare-esp32-p4-4.3 \
-  https://github.com/CorruptName/lvgl_micropython.git
+git clone https://github.com/CorruptName/lvgl_micropython.git
 cd lvgl_micropython
 ```
 
@@ -55,6 +62,7 @@ input, and I/O-expander drivers:
 
 ```bash
 python3 make.py esp32 BOARD=ESP32_GENERIC_P4 --flash-size=32 \
+  --partition-size=5242880 \
   DISPLAY=all INDEV=all EXPANDER=all
 ```
 
@@ -65,6 +73,7 @@ Build the `C6_WIFI` variant without a display TOML or Waveshare audio manifest:
 ```bash
 python3 make.py esp32 \
   BOARD=ESP32_GENERIC_P4 BOARD_VARIANT=C6_WIFI --flash-size=32 \
+  --partition-size=5242880 \
   --enable-cdc-repl=y --enable-jtag-repl=n --enable-uart-repl=y
 ```
 
@@ -78,7 +87,7 @@ build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
 
 That generated filename is also used by the full Waveshare TOML build. Rename
 or copy it before running another build if both variants are needed. The
-precompiled generic ESP-NOW image is `esp32-p4-espnow.bin`.
+corresponding producer release asset is `esp32-p4-espnow.bin`.
 
 ### Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3
 
@@ -107,8 +116,20 @@ build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
 ```
 
 The generic command writes `build/lvgl_micropy_ESP32_GENERIC_P4-32.bin`.
-`waveshare-esp32-p4-4.3-espnow.bin` is a copy of the
-hardware-tested TOML build output.
+The corresponding producer release asset is
+`waveshare-esp32-p4-4.3-espnow.bin`.
+
+For the Waveshare build without ESP-NOW, use:
+
+```bash
+python3 make.py \
+  --toml=display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3-Standard.toml
+```
+
+These direct commands are development builds. Official installer inputs are
+clean CI builds produced together by the `Build installer firmware` workflow
+from a committed revision. See `BUILDING_ESP32_P4.md` for the release and
+hardware-validation sequence.
 
 ### Flash
 

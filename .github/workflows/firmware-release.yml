@@ -41,7 +41,8 @@ jobs:
             bash -lc "git config --global --add safe.directory '*'; bash tools/build_installer_firmware.sh build_artifacts/installer"
 
       - name: Verify release bundle
-        run: sha256sum --check build_artifacts/installer/SHA256SUMS
+        working-directory: build_artifacts/installer
+        run: sha256sum --check SHA256SUMS
 
       - uses: actions/upload-artifact@v4
         with:

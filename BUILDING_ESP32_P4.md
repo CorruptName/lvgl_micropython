@@ -21,6 +21,10 @@ From PowerShell at the repository root:
 .\tools\build_waveshare.ps1
 ```
 
+This is a local development build of only the Waveshare ESP-NOW variant. It
+may reuse incremental caches and is intended for iteration and hardware tests;
+it is not an installer release build.
+
 The first run creates a persistent native Linux mirror at:
 
 ```text
@@ -58,10 +62,17 @@ Installer-compatible firmware is published only from committed source using
 the `Build installer firmware` GitHub Actions workflow. It performs clean builds
 of these four 32 MiB variants:
 
-- Generic ESP32-P4
-- Generic ESP32-P4 with C6/ESP-NOW
-- Waveshare 4.3-inch standard
-- Waveshare 4.3-inch with C6/ESP-NOW
+| Artifact ID | Filename |
+| --- | --- |
+| `dev-standard` | `esp32-p4.bin` |
+| `dev-espnow` | `esp32-p4-espnow.bin` |
+| `waveshare-standard` | `waveshare-esp32-p4-4.3.bin` |
+| `waveshare-espnow` | `waveshare-esp32-p4-4.3-espnow.bin` |
+
+All four builds reserve a fixed 5 MiB application partition at `0x10000`, so
+the FAT VFS always begins at `0x510000`. Both Waveshare configurations use the
+validated PPA-disabled profile, 16 ms LVGL task-handler period, 64-byte draw
+buffer alignment, and frame-completion-safe DSI buffer ownership.
 
 A manual workflow run produces a reviewable CI artifact. Pushing an immutable
 `firmware-v*` tag additionally publishes the four uniquely named binaries,
@@ -71,6 +82,32 @@ ESP-IDF, and ESP-Hosted commits.
 
 The installer imports an explicit producer release as one complete set. Local
 development builds never update or publish installer firmware automatically.
+
+### Release Acceptance Sequence
+
+1. Push the candidate commit and run `Build installer firmware` manually.
+2. Download that exact CI artifact and record its producer commit and four
+	SHA-256 values.
+3. Hardware-test all four images from that artifact:
+	- Generic standard: erase/flash, boot, REPL, and VFS.
+	- Generic ESP-NOW: standard checks plus Wi-Fi and ESP-NOW with matched C6.
+	- Waveshare standard: display redraw quality, touch, audio, SD, RTC, and VFS.
+	- Waveshare ESP-NOW: all Waveshare checks plus C6 identity and ESP-NOW.
+4. After the candidate artifact passes, create `firmware-v*` on the same
+	producer commit. Never move or recreate that tag.
+5. In the installer repository, import the explicit tag:
+
+	```bash
+	python update_firmware.py --sync-release firmware-vX.Y.Z
+	```
+
+6. Test all four selections from the resulting installer ZIP, merge the
+	reviewable importer PR, then create the installer `v*` tag from that exact
+	validated merge commit.
+
+The producer release contains the four binaries, their individual checksum
+files, `SHA256SUMS`, and `firmware-release.json`. The installer import is
+all-or-nothing and rejects mismatched ESP-Hosted or C6 identities.
 
 ## Flashing
 

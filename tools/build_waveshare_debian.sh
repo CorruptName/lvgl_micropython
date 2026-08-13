@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Local development builder for only the Waveshare ESP-NOW variant. This may
+# reuse incremental caches and is not a substitute for a firmware-v* release.
 set -euo pipefail
 
 IMAGE="lvgl-micropython-idf:v5.5.1"

@@ -1,4 +1,6 @@
 [CmdletBinding()]
+# Local development builder for only the Waveshare ESP-NOW variant. Release
+# firmware is produced as a four-image set by GitHub Actions from committed code.
 param(
     [ValidateSet('espnow')]
     [string]$Mode = 'espnow',

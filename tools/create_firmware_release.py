@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Create an immutable installer-firmware release index."""
+"""Index exactly four P4 images as one atomic installer compatibility set.
+
+The index records producer/submodule/radio provenance and writes SHA256SUMS for
+all four binaries plus firmware-release.json.
+"""
 
 from __future__ import annotations
 
@@ -96,6 +100,12 @@ def main() -> int:
             "c6_elf_sha256": (
                 "85544ac1fa10fee3b652525141b2c51d3aecac89e56e8d88a4dded594b56eef4"
             ),
+        },
+        "flash_layout": {
+            "flash_size_mb": 32,
+            "app_offset": "0x10000",
+            "app_size": "0x500000",
+            "vfs_offset": "0x510000",
         },
         "artifacts": artifacts,
     }

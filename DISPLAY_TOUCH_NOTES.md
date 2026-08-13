@@ -56,6 +56,28 @@ The calculated refresh rate is:
 No explicit HSYNC, VSYNC, DE, or pixel-clock polarity flags are set, so the
 ESP-IDF driver defaults are used.
 
+### Validated Release Rendering Profile
+
+Both installer/release Waveshare configurations deliberately use:
+
+- `LV_USE_PPA=0` and `LV_USE_PPA_IMG=0`
+- 64-byte LVGL draw-buffer and memory alignment
+- Two full-screen DSI framebuffers
+- Buffer release on ESP-IDF `on_refresh_done`, not
+  `on_color_trans_done`, so LVGL cannot redraw a buffer still being scanned
+- A 16 ms LVGL task-handler period to service the approximately 60 Hz panel
+
+The bundled LVGL 9.4 PPA renderer produced visible solid-fill corruption on
+physical hardware and is not enabled in release firmware. Do not enable PPA or
+change the DSI timing/buffer-completion behavior without repeated full-screen
+redraw, moving-text/object, touch, and long-duration artifact tests on the
+actual Waveshare board.
+
+The standard and ESP-NOW profiles are respectively:
+
+- `display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3-Standard.toml`
+- `display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.toml`
+
 ### D-PHY Power
 
 - Regulator: ESP32-P4 on-chip LDO
