@@ -57,6 +57,8 @@ class TOMLObject(metaclass=TOMLMeta):
         self.__kwargs = kwargs
         self.__children = []
         self.imports = []
+        if parent is None:
+            self.deferred_calls = []
 
     def add_child(self, child):
         if child.name != 'MCU':
@@ -171,7 +173,8 @@ class TOMLObject(metaclass=TOMLMeta):
 
     def __str__(self):
         if self.parent is None:
-            global_variable_names.extend(self.var_names)
+            variable_names = self.var_names
+            global_variable_names.extend(variable_names)
 
             output = []
             output.extend(self.constants)
@@ -201,10 +204,34 @@ class TOMLObject(metaclass=TOMLMeta):
                     ''
                 ] + output
 
+            if self.deferred_calls:
+                output.extend([''] + self.deferred_calls)
+
+            if 'display' in variable_names:
+                output.extend([
+                    '',
+                    'display.set_brightness = display.set_backlight',
+                    'display.get_brightness = display.get_backlight',
+                    'set_brightness = display.set_backlight',
+                    'get_brightness = display.get_backlight',
+                ])
+
             return '\n'.join(output)
 
         if self.__children and not self.__kwargs:
-            output = [str(child) for child in self.__children]
+            output = []
+            for child in self.__children:
+                child_output = str(child)
+                if child.name == 'set_backlight':
+                    root = self
+                    while root.parent is not None:
+                        root = root.parent
+                    root.deferred_calls.extend([
+                        f'lv.refr_now({self.name}._disp_drv)',
+                        child_output,
+                    ])
+                else:
+                    output.append(child_output)
             return '\n'.join(output)
 
         fqn = self.fqn
@@ -282,7 +309,17 @@ class TOMLObject(metaclass=TOMLMeta):
                 raise RuntimeError
 
             for child in self.__children:
-                output.append(self.name + '.' + str(child).split('.', 2)[-1])
+                child_output = self.name + '.' + str(child).split('.', 2)[-1]
+                if child.name == 'set_backlight':
+                    root = self
+                    while root.parent is not None:
+                        root = root.parent
+                    root.deferred_calls.extend([
+                        f'lv.refr_now({self.name}._disp_drv)',
+                        child_output,
+                    ])
+                else:
+                    output.append(child_output)
 
             if len(output) > 2:
                 output.append('')

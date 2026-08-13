@@ -177,6 +177,7 @@ class DisplayDriver:
                     self._backlight_pin = machine.PWM(
                         self._backlight_pin,
                         freq=backlight_freq,
+                        duty_u16=0,
                         invert=backlight_inverted
                     )
 
@@ -517,6 +518,8 @@ class DisplayDriver:
         raise NotImplementedError('You must delete the instance by using `del {instance}`')
 
     def __del__(self):
+        self.set_backlight(0)
+
         if self in self._displays:
             self._displays.remove(self)
             self._disp_drv.delete()

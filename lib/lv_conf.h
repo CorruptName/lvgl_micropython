@@ -157,7 +157,9 @@ extern void *mp_lv_roots;
 #define LV_DRAW_BUF_STRIDE_ALIGN                1
 
 /*Align the start address of draw_buf addresses to this bytes*/
-#define LV_DRAW_BUF_ALIGN                       4
+#ifndef LV_DRAW_BUF_ALIGN
+    #define LV_DRAW_BUF_ALIGN                   4
+#endif
 
 /* If a widget has `style_opa < 255` (not `bg_opa`, `text_opa` etc) or not NORMAL blend mode
  * it is buffered into a "simple" layer before rendering. The widget can be buffered in smaller chunks.
@@ -461,7 +463,9 @@ extern void *mp_lv_roots;
 #define LV_ATTRIBUTE_FLUSH_READY
 
 /*Required alignment size for buffers*/
-#define LV_ATTRIBUTE_MEM_ALIGN_SIZE 1
+#ifndef LV_ATTRIBUTE_MEM_ALIGN_SIZE
+    #define LV_ATTRIBUTE_MEM_ALIGN_SIZE 1
+#endif
 
 /*Will be added where memories needs to be aligned (with -Os data might not be aligned to boundary by default).
  * E.g. __attribute__((aligned(4)))*/

@@ -2,6 +2,7 @@
 BOARD = "ESP32_GENERIC_P4"
 BOARD_VARIANT = "C6_WIFI"
 FROZEN_MANIFEST = "display_configs/waveshare_esp32_p4_audio_manifest.py"
+LV_CFLAGS = "-DLV_USE_PPA=1 -DLV_USE_PPA_IMG=0 -DLV_DRAW_BUF_ALIGN=64 -DLV_ATTRIBUTE_MEM_ALIGN_SIZE=64 -DCONFIG_LV_DRAW_BUF_ALIGN=64 -DCONFIG_LV_ATTRIBUTE_MEM_ALIGN_SIZE=64"
 flash_size = 32
 enable_jtag_repl = 'n'
 enable_cdc_repl = 'y'

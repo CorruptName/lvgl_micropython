@@ -808,7 +808,11 @@ structs.update({k:v for k,v in opaque_structs.items() if k not in structs})
 func_defs = [x.decl for x in ast.ext if isinstance(x, c_ast.FuncDef)]
 func_decls = [x for x in ast.ext if isinstance(x, c_ast.Decl) and isinstance(x.type, c_ast.FuncDecl)]
 all_funcs = func_defs + func_decls
-funcs = [f for f in all_funcs if not f.name.startswith('_')] # functions that start with underscore are usually internal
+funcs_by_name = collections.OrderedDict()
+for func in all_funcs:
+    if not func.name.startswith('_') and func.name not in funcs_by_name:
+        funcs_by_name[func.name] = func
+funcs = list(funcs_by_name.values()) # functions that start with underscore are usually internal
 # eprint('... %s' % ',\n'.join(sorted('%s' % func.name for func in funcs)))
 obj_ctors = [func for func in funcs if is_obj_ctor(func)]
 
@@ -2289,6 +2293,7 @@ print ('''
  */
 ''')
 
+emitted_str_constants = set()
 for enum_def in enum_defs:
     if not enum_def.type.values:
         continue
@@ -2300,7 +2305,9 @@ for enum_def in enum_defs:
         for member in enum_def.type.values.enumerators:
             full_name = str_enum_to_str(member.name)
             member_name = full_name[len(enum_name)+1:]
-            print('MP_DEFINE_STR_OBJ(mp_%s, %s);' % (full_name, full_name))
+            if full_name not in emitted_str_constants:
+                print('MP_DEFINE_STR_OBJ(mp_%s, %s);' % (full_name, full_name))
+                emitted_str_constants.add(full_name)
             enum[member_name] = '&mp_%s' % full_name
         if len(enum) > 0:
             if enum_name in enums:

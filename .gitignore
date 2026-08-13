@@ -116,3 +116,7 @@ ext_mod/lvgl/yacctab.py
 main.py
 # Generated stubs
 lvgl.pyi
+
+# Local firmware build outputs
+build_artifacts/*.bin
+build_artifacts/*.sha256

@@ -3,10 +3,10 @@ import lvgl as lv
 
 
 
-current_backlight = display.get_backlight()
+current_brightness = display.get_brightness()
 
 
-display.set_backlight(100)  # Set backlight to 100% for better visibility
+display.set_brightness(100)
 
 
 

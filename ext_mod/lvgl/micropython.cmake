@@ -58,6 +58,10 @@ add_library(lvgl_interface INTERFACE)
 target_sources(lvgl_interface INTERFACE ${LVGL_SOURCES})
 target_compile_options(lvgl_interface INTERFACE ${LV_CFLAGS})
 
+if(ESP_PLATFORM AND "$ENV{LV_CFLAGS}" MATCHES "(^| )-DLV_USE_PPA=1($| )")
+    target_link_libraries(lvgl_interface INTERFACE idf::esp_driver_ppa)
+endif()
+
 set(LVGL_MPY_INCLUDES
     ${BINDING_DIR}/lib/micropython
     ${BINDING_DIR}/lib
