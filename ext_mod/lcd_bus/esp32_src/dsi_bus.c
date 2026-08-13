@@ -254,7 +254,7 @@
         }
 
         esp_lcd_dpi_panel_event_callbacks_t callbacks = {
-            .on_color_trans_done = &dsi_bus_trans_done_cb
+            .on_refresh_done = &dsi_bus_trans_done_cb
         };
 
         ret = esp_lcd_dpi_panel_register_event_callbacks(self->panel_handle, &callbacks, self);
@@ -280,13 +280,16 @@
 
         void *buf1 = self->view1->items;
         size_t frame_buffer_size = (size_t)width * height * bpp / 8;
-        self->view1->items = fb1;
+        // The DPI driver starts by scanning fb1. Give LVGL the initially
+        // off-screen framebuffer first so its first render cannot modify the
+        // buffer currently being scanned.
+        self->view1->items = self->panel_config.num_fbs == 2 ? fb2 : fb1;
         self->view1->len = frame_buffer_size;
         heap_caps_free(buf1);
 
         if (self->panel_config.num_fbs == 2) {
             void *buf2 = self->view2->items;
-            self->view2->items = fb2;
+            self->view2->items = fb1;
             self->view2->len = frame_buffer_size;
             heap_caps_free(buf2);
         }
@@ -436,7 +439,9 @@
 
         mp_lcd_dsi_bus_obj_t *self = (mp_lcd_dsi_bus_obj_t *)obj;
 
-        self->trans_done = false;
+        // Ignore frame-completion interrupts until this draw request has
+        // selected the next framebuffer.
+        self->trans_done = true;
         self->transmitting_buf = color;
 
         esp_err_t ret = esp_lcd_panel_draw_bitmap(
@@ -452,6 +457,11 @@
             mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%d(esp_lcd_panel_draw_bitmap)"), ret);
             return LCD_OK;
         }
+
+        // Arm completion after selecting the requested framebuffer. A refresh
+        // interrupt in the small window above can only add one frame of
+        // latency; it cannot release a framebuffer that is still scanned out.
+        self->trans_done = false;
 
         if (self->callback == mp_const_none || self->panel_config.num_fbs != 2) {
             while (!self->trans_done) {}
