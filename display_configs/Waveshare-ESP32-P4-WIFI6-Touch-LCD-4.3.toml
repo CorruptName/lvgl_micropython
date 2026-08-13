@@ -71,4 +71,4 @@ poll_interval_ms = 20
 params = [100]
 
 [task_handler.TaskHandler]
-params = []
+params = [16]
