@@ -5,6 +5,8 @@ param(
 
     [switch]$Clean,
 
+    [switch]$SkipInstallerSync,
+
     [string]$Distribution = 'Debian'
 )
 
@@ -47,4 +49,21 @@ $ErrorActionPreference = 'Continue'
 wsl @arguments
 $exitCode = $LASTEXITCODE
 $ErrorActionPreference = $previousErrorActionPreference
+
+if ($exitCode -eq 0 -and -not $SkipInstallerSync) {
+    $installerRepository = Join-Path (Split-Path -Parent $repository) 'esp32-p4-micropython-installer'
+    $installerUpdater = Join-Path $installerRepository 'update_firmware.py'
+    $python = Join-Path $repository '.venv\Scripts\python.exe'
+
+    if ((Test-Path $installerUpdater) -and (Test-Path $python)) {
+        Write-Host "Synchronizing firmware with: $installerRepository"
+        & $python $installerUpdater --sync-lvgl $repository
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+    } else {
+        Write-Host 'Installer sibling not found; skipping firmware synchronization.'
+    }
+}
+
 exit $exitCode

@@ -46,6 +46,11 @@ waveshare-esp32-p4-4.3-espnow.bin
 waveshare-esp32-p4-4.3-espnow.bin.sha256
 ```
 
+When `../esp32-p4-micropython-installer` is present, a successful build also
+imports the new Waveshare ESP-NOW image into that repository, updates its
+manifest metadata, and verifies all installer artifacts. Use
+`-SkipInstallerSync` to suppress this integration for an isolated build.
+
 Use a clean native build only when needed:
 
 ```powershell
