@@ -1,0 +1,74 @@
+[MCU.esp32]
+BOARD = "ESP32_GENERIC_P4"
+FROZEN_MANIFEST = "display_configs/waveshare_esp32_p4_audio_manifest.py"
+LV_CFLAGS = "-DLV_USE_PPA=0 -DLV_USE_PPA_IMG=0 -DLV_DRAW_BUF_ALIGN=64 -DLV_ATTRIBUTE_MEM_ALIGN_SIZE=64 -DCONFIG_LV_DRAW_BUF_ALIGN=64 -DCONFIG_LV_ATTRIBUTE_MEM_ALIGN_SIZE=64"
+flash_size = 32
+partition_size = 0x500000
+enable_jtag_repl = 'n'
+enable_cdc_repl = 'y'
+enable_uart_repl = 'y'
+CONFIG_IDF_EXPERIMENTAL_FEATURES = 'y'
+CONFIG_ESPTOOLPY_FLASHFREQ_40M = 'y'
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3 = 'y'
+CONFIG_ESP32P4_REV_MIN_100 = 'y'
+CONFIG_SPIRAM_MODE_HEX = 'y'
+CONFIG_SPIRAM_SPEED_200M = 'y'
+
+[DSIBus.display_bus]
+bus_id = 0
+data_lanes = 2
+lane_freq = 500
+dpi_freq = 30
+ldo_channel = 3
+ldo_voltage = 2500
+virtual_channel = 0
+hsync_back_porch = 42
+hsync_pulse_width = 12
+hsync_front_porch = 42
+vsync_back_porch = 2
+vsync_pulse_width = 8
+vsync_front_porch = 60
+
+[I2C.Bus.i2c_bus]
+host = 1
+scl = 8
+sda = 7
+freq = 400000
+
+[I2C.Device.indev_device]
+bus = "i2c_bus"
+dev_id = "gt911.I2C_ADDR"
+reg_bits = "gt911.BITS"
+
+[I2C.Device.audio_device]
+bus = "i2c_bus"
+dev_id = 24
+reg_bits = 8
+
+[ST7701.display]
+data_bus = "display_bus"
+display_width = 480
+display_height = 800
+reset_pin = 27
+reset_state = "st7701.STATE_LOW"
+backlight_pin = 26
+backlight_on_state = "st7701.STATE_PWM"
+backlight_freq = 5000
+backlight_inverted = true
+color_byte_order = "st7701.BYTE_ORDER_RGB"
+color_space = "lv.COLOR_FORMAT.RGB565"
+
+[display.init]
+params = ["st7701.TYPE_WAVESHARE_ESP32_P4_43"]
+
+[GT911.indev]
+device = "indev_device"
+reset_pin = 23
+probe_addresses = true
+poll_interval_ms = 20
+
+[display.set_backlight]
+params = [100]
+
+[task_handler.TaskHandler]
+params = [16]

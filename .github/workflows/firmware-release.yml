@@ -1,0 +1,73 @@
+name: Build installer firmware
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - optimize-display-lantern-driver
+    tags:
+      - "firmware-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify committed source
+        run: |
+          test -z "$(git status --porcelain --untracked-files=no)"
+          git submodule status --recursive
+
+      - name: Build pinned ESP-IDF image
+        run: |
+          docker build \
+            --tag lvgl-micropython-idf:v5.5.1 \
+            --file tools/docker/esp32-p4.Dockerfile \
+            tools/docker
+
+      - name: Build all installer variants
+        run: |
+          docker run --rm \
+            --mount "type=bind,source=${GITHUB_WORKSPACE},target=/workspace" \
+            --workdir /workspace \
+            lvgl-micropython-idf:v5.5.1 \
+            bash -lc "git config --global --add safe.directory '*'; bash tools/build_installer_firmware.sh build_artifacts/installer"
+
+      - name: Verify release bundle
+        run: sha256sum --check build_artifacts/installer/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esp32-p4-installer-firmware-${{ github.sha }}
+          path: build_artifacts/installer/
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/firmware-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: esp32-p4-installer-firmware-${{ github.sha }}
+          path: firmware
+
+      - name: Publish immutable firmware release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            firmware/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag

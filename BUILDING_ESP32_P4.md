@@ -46,16 +46,31 @@ waveshare-esp32-p4-4.3-espnow.bin
 waveshare-esp32-p4-4.3-espnow.bin.sha256
 ```
 
-When `../esp32-p4-micropython-installer` is present, a successful build also
-imports the new Waveshare ESP-NOW image into that repository, updates its
-manifest metadata, and verifies all installer artifacts. Use
-`-SkipInstallerSync` to suppress this integration for an isolated build.
-
 Use a clean native build only when needed:
 
 ```powershell
 .\tools\build_waveshare.ps1 -Clean
 ```
+
+## Installer Firmware Releases
+
+Installer-compatible firmware is published only from committed source using
+the `Build installer firmware` GitHub Actions workflow. It performs clean builds
+of these four 32 MiB variants:
+
+- Generic ESP32-P4
+- Generic ESP32-P4 with C6/ESP-NOW
+- Waveshare 4.3-inch standard
+- Waveshare 4.3-inch with C6/ESP-NOW
+
+A manual workflow run produces a reviewable CI artifact. Pushing an immutable
+`firmware-v*` tag additionally publishes the four uniquely named binaries,
+individual checksums, `SHA256SUMS`, and `firmware-release.json` as GitHub
+Release assets. The release index records the producer, MicroPython, LVGL,
+ESP-IDF, and ESP-Hosted commits.
+
+The installer imports an explicit producer release as one complete set. Local
+development builds never update or publish installer firmware automatically.
 
 ## Flashing
 
