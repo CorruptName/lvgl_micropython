@@ -6,7 +6,7 @@
 	url = https://github.com/libsdl-org/SDL
 [submodule "lib/lvgl"]
 	path = lib/lvgl
-	url = https://github.com/lvgl/lvgl
+	url = https://github.com/CorruptName/lvgl
 [submodule "lib/micropython"]
 	path = lib/micropython
 	url = https://github.com/CorruptName/micropython
