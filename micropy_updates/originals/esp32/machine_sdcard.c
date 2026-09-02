@@ -37,6 +37,9 @@
 #if SOC_SDMMC_HOST_SUPPORTED
 #include "driver/sdmmc_host.h"
 #endif
+#if SOC_SDMMC_IO_POWER_EXTERNAL
+#include "sd_pwr_ctrl_by_on_chip_ldo.h"
+#endif
 #include "driver/sdspi_host.h"
 #include "sdmmc_cmd.h"
 #include "esp_log.h"
@@ -68,6 +71,9 @@ typedef struct _sdcard_obj_t {
     sdspi_device_config_t dev_config;
     sdspi_dev_handle_t sdspi_handle;
     mp_machine_hw_spi_device_obj_t spi_device;
+#if SOC_SDMMC_IO_POWER_EXTERNAL
+    sd_pwr_ctrl_handle_t pwr_ctrl_handle;
+#endif
 } sdcard_card_obj_t;
 
 
@@ -124,6 +130,7 @@ static mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
         ARG_spi_bus,
         ARG_cs,
         ARG_freq,
+        ARG_ldo_chan,
     };
 
     static const mp_arg_t make_new_args[] = {
@@ -140,6 +147,7 @@ static mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
         { MP_QSTR_cs,        MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
         // freq is valid for both SPI and SDMMC interfaces
         { MP_QSTR_freq,     MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 20000000} },
+        { MP_QSTR_ldo_chan, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(make_new_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(make_new_args),
@@ -174,6 +182,9 @@ static mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
 #endif
 
     self->flags = 0;
+#if SOC_SDMMC_IO_POWER_EXTERNAL
+    self->pwr_ctrl_handle = NULL;
+#endif
     // Note that these defaults are macros that expand to structure
     // constants so we can't directly assign them to fields.
     int freq = args[ARG_freq].u_int;
@@ -191,6 +202,21 @@ static mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
         sdmmc_host_t _temp_host = SDMMC_HOST_DEFAULT();
         _temp_host.max_freq_khz = freq / 1000;
         self->host = _temp_host;
+    }
+#endif
+
+#if SOC_SDMMC_IO_POWER_EXTERNAL
+    int ldo_chan = args[ARG_ldo_chan].u_int;
+    if (ldo_chan >= 0) {
+        sd_pwr_ctrl_ldo_config_t ldo_config = {
+            .ldo_chan_id = ldo_chan,
+        };
+        check_esp_err(sd_pwr_ctrl_new_on_chip_ldo(&ldo_config, &self->pwr_ctrl_handle));
+        self->host.pwr_ctrl_handle = self->pwr_ctrl_handle;
+    }
+#else
+    if (args[ARG_ldo_chan].u_int >= 0) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("SD power control is not supported by this MCU"));
     }
 #endif
 
@@ -308,6 +334,13 @@ static mp_obj_t sd_deinit(mp_obj_t self_in) {
 
         self->flags &= ~SDCARD_CARD_FLAGS_HOST_INIT_DONE;
     }
+
+#if SOC_SDMMC_IO_POWER_EXTERNAL
+    if (self->pwr_ctrl_handle != NULL) {
+        check_esp_err(sd_pwr_ctrl_del_on_chip_ldo(self->pwr_ctrl_handle));
+        self->pwr_ctrl_handle = NULL;
+    }
+#endif
 
     return mp_const_none;
 }

@@ -68,7 +68,9 @@ python3 make.py esp32 BOARD=ESP32_GENERIC_P4 --flash-size=32 \
 
 ### Headless ESP-NOW build
 
-Build the `C6_WIFI` variant without a display TOML or Waveshare audio manifest:
+Build the ESP-NOW-enabled firmware profile without a display TOML or Waveshare
+audio manifest. `C6_WIFI` is the build-system selector for this profile; it
+does not identify a different hardware target:
 
 ```bash
 python3 make.py esp32 \
@@ -86,7 +88,7 @@ build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
 ```
 
 That generated filename is also used by the full Waveshare TOML build. Rename
-or copy it before running another build if both variants are needed. The
+or copy it before running another build if both firmware profiles are needed. The
 corresponding producer release asset is `esp32-p4-espnow.bin`.
 
 ### Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3
@@ -107,9 +109,9 @@ python3 make.py \
   --toml=display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.toml
 ```
 
-This TOML selects `ESP32_GENERIC_P4`, the `C6_WIFI` variant, 32 MB flash,
-display, touch, audio, Hosted Wi-Fi, and MicroPython ESP-NOW support. It writes
-the complete merged P4 image to:
+This TOML selects `ESP32_GENERIC_P4`, the ESP-NOW-enabled `C6_WIFI` firmware
+profile, 32 MB flash, display, touch, audio, Hosted Wi-Fi, and MicroPython
+ESP-NOW support. It writes the complete merged P4 image to:
 
 ```text
 build/lvgl_micropy_ESP32_GENERIC_P4-C6_WIFI-32.bin
@@ -370,8 +372,11 @@ used to be.
 
 `examples/waveshare_esp32_p4_4_3/espnow_scanner.py` discovers nearby ESP-NOW
 peers and lists them on the display. It requires firmware built with the
-`C6_WIFI` board variant (ESP-NOW routed through an ESP32-C6 WiFi coprocessor)
-and at least two boards running the script to see any results.
+ESP-NOW-enabled `C6_WIFI` firmware profile (ESP-NOW routed through the board's
+ESP32-C6 coprocessor) and at least two boards running the script to see any
+results. All supported P4 targets use an ESP32-C6 for radio communication over
+ESP-Hosted; this profile additionally installs the matching ESP-NOW-capable C6
+firmware and exposes the required MicroPython support.
 
 
 ## *Supported display and touch hardware*

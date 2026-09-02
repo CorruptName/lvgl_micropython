@@ -34,7 +34,8 @@
             void *buf2;
             uint32_t buffer_flags;
 
-            bool trans_done;
+            volatile bool trans_done;
+            volatile uint8_t refreshes_remaining;
             bool rgb565_byte_swap;
 
             lcd_panel_io_t panel_io_handle;

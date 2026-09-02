@@ -2,9 +2,11 @@
 
 These examples target the Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3. Prefer a
 named immutable installer release and select the Waveshare target. Display,
-touch, audio, SD, and RTC examples work with either Waveshare variant;
-`espnow_scanner.py` and `wizmote_listener.py` require the ESP-NOW variant and a
-matching C6 firmware installation.
+touch, audio, SD, and RTC examples work with either firmware profile;
+`espnow_scanner.py` and `wizmote_listener.py` require the ESP-NOW-enabled
+profile and its matching C6 firmware installation. Both profiles target the
+same ESP32-P4 board with an ESP32-C6 radio coprocessor connected through
+ESP-Hosted.
 
 For direct producer flashing, download all assets from an explicit
 `firmware-v*` release, verify `SHA256SUMS`, and flash the selected merged image

@@ -21,7 +21,8 @@ From PowerShell at the repository root:
 .\tools\build_waveshare.ps1
 ```
 
-This is a local development build of only the Waveshare ESP-NOW variant. It
+This is a local development build of only the Waveshare ESP-NOW-enabled
+firmware profile. It
 may reuse incremental caches and is intended for iteration and hardware tests;
 it is not an installer release build.
 
@@ -60,7 +61,7 @@ Use a clean native build only when needed:
 
 Installer-compatible firmware is published only from committed source using
 the `Build installer firmware` GitHub Actions workflow. It performs clean builds
-of these four 32 MiB variants:
+of these four 32 MiB firmware profiles:
 
 | Artifact ID | Filename |
 | --- | --- |
@@ -71,8 +72,9 @@ of these four 32 MiB variants:
 
 All four builds reserve a fixed 5 MiB application partition at `0x10000`, so
 the FAT VFS always begins at `0x510000`. Both Waveshare configurations use the
-validated PPA-disabled profile, 16 ms LVGL task-handler period, 64-byte draw
-buffer alignment, and frame-completion-safe DSI buffer ownership.
+validated PPA fill profile, 16 ms LVGL task-handler period, 64-byte draw buffer
+alignment, and frame-completion-safe DSI buffer ownership. PPA image
+acceleration remains disabled.
 
 A manual workflow run produces a reviewable CI artifact. Pushing an immutable
 `firmware-v*` tag additionally publishes the four uniquely named binaries,

@@ -42,11 +42,14 @@
 
         mp_lcd_dsi_bus_obj_t *self = (mp_lcd_dsi_bus_obj_t *)user_ctx;
 
-        if (!self->trans_done) {
-            if (self->callback != mp_const_none && mp_obj_is_callable(self->callback)) {
-                cb_isr(self->callback);
+        if (!self->trans_done && self->refreshes_remaining > 0) {
+            self->refreshes_remaining--;
+            if (self->refreshes_remaining == 0) {
+                if (self->callback != mp_const_none && mp_obj_is_callable(self->callback)) {
+                    cb_isr(self->callback);
+                }
+                self->trans_done = true;
             }
-            self->trans_done = true;
         }
 
         return false;
@@ -442,14 +445,15 @@
         // Ignore frame-completion interrupts until this draw request has
         // selected the next framebuffer.
         self->trans_done = true;
+        self->refreshes_remaining = 0;
         self->transmitting_buf = color;
 
         esp_err_t ret = esp_lcd_panel_draw_bitmap(
             self->panel_handle,
             x_start,
             y_start,
-            x_end,
-            y_end,
+            x_end + 1,
+            y_end + 1,
             color
         );
 
@@ -458,15 +462,13 @@
             return LCD_OK;
         }
 
-        // Arm completion after selecting the requested framebuffer. A refresh
-        // interrupt in the small window above can only add one frame of
-        // latency; it cannot release a framebuffer that is still scanned out.
+        // Do not return until scanout has switched to this framebuffer.
+        // LVGL starts rendering into the alternate buffer as soon as the
+        // flush callback returns, before it waits for flush_ready.
+        self->refreshes_remaining = 1;
         self->trans_done = false;
 
-        if (self->callback == mp_const_none || self->panel_config.num_fbs != 2) {
-            while (!self->trans_done) {}
-            self->trans_done = false;
-        }
+        while (!self->trans_done) {}
 
         return LCD_OK;
     }

@@ -60,23 +60,39 @@ ESP-IDF driver defaults are used.
 
 Both installer/release Waveshare configurations deliberately use:
 
-- `LV_USE_PPA=0` and `LV_USE_PPA_IMG=0`
+- `LV_USE_PPA=1` and `LV_USE_PPA_IMG=0`
 - 64-byte LVGL draw-buffer and memory alignment
 - Two full-screen DSI framebuffers
-- Buffer release on ESP-IDF `on_refresh_done`, not
-  `on_color_trans_done`, so LVGL cannot redraw a buffer still being scanned
+- A blocking DSI flush through ESP-IDF `on_refresh_done`, so LVGL cannot
+  begin rendering into the previous scanout buffer before the frame switch
 - A 16 ms LVGL task-handler period to service the approximately 60 Hz panel
 
-The bundled LVGL 9.4 PPA renderer produced visible solid-fill corruption on
-physical hardware and is not enabled in release firmware. Do not enable PPA or
-change the DSI timing/buffer-completion behavior without repeated full-screen
-redraw, moving-text/object, touch, and long-duration artifact tests on the
-actual Waveshare board.
+PPA solid fills and the DSI handoff were validated together on physical
+hardware. Do not change the DSI timing/buffer-completion behavior without
+repeated full-screen redraw, moving-text/object, touch, and long-duration
+artifact tests on the actual Waveshare board.
 
 The standard and ESP-NOW profiles are respectively:
 
 - `display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3-Standard.toml`
 - `display_configs/Waveshare-ESP32-P4-WIFI6-Touch-LCD-4.3.toml`
+
+### PPA Acceleration Candidate
+
+The `esp32-p4-ppa-acceleration` branch updates LVGL to upstream commit
+`b7b15b65d`, which corrects PPA dirty-area coordinates, uses blocking PPA
+transactions, and delegates transaction cache synchronization to ESP-IDF.
+The ESP32 builder enables solid-fill acceleration and 64-byte alignment by
+default for every `ESP32_GENERIC_P4` build. The Waveshare profiles repeat
+these settings explicitly for release reproducibility. Image acceleration
+remains disabled pending separate validation. An explicit `LV_USE_PPA` flag
+still overrides the builder default for troubleshooting.
+
+Before release, run `examples/waveshare_esp32_p4_4_3/display_artifact_test.py`
+on both the standard-radio and ESP-NOW-enabled firmware profiles and check
+displaced fills, stale glyphs, tearing, and mirrored blocks during extended
+operation. Both profiles target the same P4+C6 hardware; the latter installs
+the ESP-NOW-capable C6 firmware and enables its MicroPython integration.
 
 ### D-PHY Power
 

@@ -573,6 +573,25 @@ def parse_args(extra_args, lv_cflags, brd):
 
     extra_args = repl_args(extra_args)
 
+    if board == 'ESP32_GENERIC_P4':
+        ppa_defaults = (
+            ('LV_USE_PPA', 1),
+            ('LV_USE_PPA_IMG', 0),
+            ('LV_DRAW_BUF_ALIGN', 64),
+            ('LV_ATTRIBUTE_MEM_ALIGN_SIZE', 64),
+            ('CONFIG_LV_DRAW_BUF_ALIGN', 64),
+            ('CONFIG_LV_ATTRIBUTE_MEM_ALIGN_SIZE', 64),
+        )
+        defined = {
+            flag[2:].split('=', 1)[0]
+            for flag in lv_cflags.split()
+            if flag.startswith('-D')
+        }
+        for name, value in ppa_defaults:
+            if name not in defined:
+                lv_cflags += f' -D{name}={value}'
+        lv_cflags = lv_cflags.strip()
+
     if lv_cflags:
         lv_cflags += ' -DLV_KCONFIG_IGNORE=1'
     else:
