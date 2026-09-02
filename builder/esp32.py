@@ -17,6 +17,8 @@ from . import (
 )
 
 IDF_VER = '5.5.1'
+H264_COMPONENT_COMMIT = '6fc011d98649c1c04b4c97b41748f7ce45de1e71'
+ESP_HOSTED_COMPONENT_COMMIT = 'dd95bdf3316fc8c6110b387855033a26c0aa2447'
 
 
 def get_partition_file_name(otp):
@@ -617,6 +619,7 @@ SCRIPT_DIR = ''
 def build_commands(_, extra_args, script_dir, lv_cflags, ___):
     global SCRIPT_DIR
     SCRIPT_DIR = script_dir
+    setup_p4_components()
 
     clean_cmd.extend(esp_cmd[:])
     clean_cmd[1] = 'clean'
@@ -626,6 +629,16 @@ def build_commands(_, extra_args, script_dir, lv_cflags, ___):
     submodules_cmd[1] = 'submodules'
     submodules_cmd.append(f'BOARD={board}')
 
+    if board == 'ESP32_GENERIC_P4':
+        h264_selector = '-DCONFIG_ESP32P4_SELECTS_REV_LESS_V3=ON'
+        submodules_cmd.append(f'CMAKE_ARGS={h264_selector}')
+        h264_cmake_args = (
+            f'CMAKE_ARGS="{h264_selector} '
+            '-DUSER_C_MODULES=../../../../../ext_mod/micropython.cmake"'
+        )
+    else:
+        h264_cmake_args = None
+
     esp_cmd.extend([
         'SECOND_BUILD=0',
         f'LV_CFLAGS="{lv_cflags}"',
@@ -633,6 +646,9 @@ def build_commands(_, extra_args, script_dir, lv_cflags, ___):
         f'BOARD={board}',
         'USER_C_MODULES=../../../../../ext_mod/micropython.cmake'
     ])
+
+    if h264_cmake_args is not None:
+        esp_cmd.append(h264_cmake_args)
 
     # esp_cmd.extend(extra_args)
 
@@ -916,6 +932,51 @@ def user_c_module():
 
     with open('ext_mod/esp32_components.cmake', 'w') as f:
         f.write('\n'.join(data))
+
+
+def checkout_component(repository_url, repository_path, commit):
+    commands = []
+    if not os.path.exists(repository_path):
+        commands.append(['git', 'clone', repository_url, repository_path])
+    commands.append(['git', '-C', repository_path, 'checkout', commit])
+    commands.append([
+        'git', '-C', repository_path,
+        'submodule', 'update', '--init', '--recursive',
+    ])
+
+    exit_code, output = spawn(commands, spinner=True)
+    if exit_code:
+        print(output)
+        sys.exit(exit_code)
+
+
+def setup_p4_components():
+    if board != 'ESP32_GENERIC_P4':
+        return
+
+    component_parent = 'lib/micropython/ports/esp32/components'
+    os.makedirs(component_parent, exist_ok=True)
+
+    checkout_component(
+        'https://github.com/CorruptName/esp-hosted-mcu.git',
+        os.path.join(component_parent, 'espressif__esp_hosted'),
+        ESP_HOSTED_COMPONENT_COMMIT,
+    )
+
+    repository_path = os.path.join(component_parent, 'esp-h264-component')
+    component_path = os.path.join(component_parent, 'espressif__esp_h264')
+    checkout_component(
+        'https://github.com/espressif/esp-h264-component.git',
+        repository_path,
+        H264_COMPONENT_COMMIT,
+    )
+
+    if os.path.lexists(component_path):
+        if os.path.islink(component_path) and os.path.realpath(component_path) == os.path.realpath(os.path.join(repository_path, 'esp_h264')):
+            return
+        raise RuntimeError(f'Unexpected component already exists: {component_path}')
+
+    os.symlink('esp-h264-component/esp_h264', component_path)
 
 
 def add_components(env, cmds):

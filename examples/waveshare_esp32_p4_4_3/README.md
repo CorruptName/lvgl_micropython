@@ -103,6 +103,30 @@ python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/sdcard_test
 The test never formats the card. It unmounts the filesystem and disables the
 SD I/O supply before exiting, including after an error.
 
+## Hardware H.264 encoder
+
+`h264_encoder_test.py` generates a moving 320 x 240 packed YUV420 pattern,
+encodes 90 frames with the ESP32-P4 hardware encoder, forces an IDR frame, and
+checks frame types and Annex-B start codes. It writes the elementary stream to
+`/sd/h264_encoder_test.h264` without formatting the card:
+
+```powershell
+python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/h264_encoder_test.py
+```
+
+The test prints `PASS`, frame counts, output size, average encode time, and
+hardware throughput. Copy the result to the host and inspect it with FFmpeg:
+
+```powershell
+python -m mpremote connect COM10 fs cp :/sd/h264_encoder_test.h264 .
+ffprobe -v error -show_streams h264_encoder_test.h264
+ffmpeg -y -framerate 30 -i h264_encoder_test.h264 -c copy h264_encoder_test.mp4
+```
+
+Successful host verification reports H.264 video at 320 x 240. Playback should
+show a moving bright vertical band over a horizontal gradient, with changing
+chroma bands. The script overwrites an existing test stream.
+
 ## Internal RTC
 
 `rtc_test.py` reads the ESP32-P4 internal RTC twice and verifies that it

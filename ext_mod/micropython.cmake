@@ -5,6 +5,10 @@ if(ESP_PLATFORM)
     include(${CMAKE_CURRENT_LIST_DIR}/spi3wire/micropython.cmake)
     include(${CMAKE_CURRENT_LIST_DIR}/c6_ota/micropython.cmake)
 
+    if(IDF_TARGET STREQUAL "esp32p4")
+        include(${CMAKE_CURRENT_LIST_DIR}/h264/micropython.cmake)
+    endif()
+
     if(DEFINED ENV{LEDSTRIP})
         include(${CMAKE_CURRENT_LIST_DIR}/led_strip/micropython.cmake)
     endif()

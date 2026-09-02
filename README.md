@@ -24,6 +24,10 @@ ______________________________
 Installer-compatible P4 firmware is published as an immutable, coordinated
 four-image set from committed `firmware-v*` tags:
 
+ESP32-P4 builds include the hardware H.264 encoder binding. See
+[HARDWARE_ENCODER.md](HARDWARE_ENCODER.md) for its API, raw frame layout,
+silicon-revision restrictions, and memory requirements.
+
 | Artifact ID | Release asset | Target | ESP-NOW |
 | --- | --- | --- | --- |
 | `dev-standard` | `esp32-p4.bin` | Generic ESP32-P4 | No |
