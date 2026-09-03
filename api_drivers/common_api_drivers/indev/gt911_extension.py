@@ -1,6 +1,7 @@
 # Copyright (c) 2024 - 2025 Kevin G. Schlosser
 
 from micropython import const  # NOQA
+import time
 
 
 _CONFIG_START_REG = const(0x8047)
@@ -18,8 +19,8 @@ _Y_OUTPUT_MAX_HIGH_POS = const(0x04)
 _NOISE_REDUCTION_POS = const(0x0B)
 _TOUCH_PRESS_LEVEL_POS = const(0x0C)
 _TOUCH_LEAVE_LEVEL_POS = const(0x0D)
-# Low_Power_Control 0x0E
-# Refresh_Rate 0x0F
+_LOW_POWER_CONTROL_POS = const(0x0E)
+_REFRESH_RATE_POS = const(0x0F)
 # x_threshold 0x10
 # y_threshold 0x11
 # X_Speed_Limit 0x12
@@ -29,6 +30,7 @@ _HOR_SPACE_POS = const(0x15)  # const(0x805C)  # low 4 bits is right and high is
 
 _CONFIG_CHKSUM_REG = const(0x80FF)
 _CONFIG_FRESH_REG = const(0x8100)
+_CONFIG_APPLY_DELAY_MS = const(100)
 # 0-15 * 32
 
 
@@ -113,6 +115,26 @@ class GT911Extension(object):
         self._config_data[_TOUCH_LEAVE_LEVEL_POS] = value & 0xFF
 
     @property
+    def low_power_control(self):
+        return self._config_data[_LOW_POWER_CONTROL_POS]
+
+    @low_power_control.setter
+    def low_power_control(self, value):
+        if not isinstance(value, int) or not 0 <= value <= 0x0F:
+            raise ValueError('low_power_control must be from 0 to 15')
+        self._config_data[_LOW_POWER_CONTROL_POS] = value
+
+    @property
+    def refresh_rate(self):
+        return self._config_data[_REFRESH_RATE_POS]
+
+    @refresh_rate.setter
+    def refresh_rate(self, value):
+        if not isinstance(value, int) or not 0 <= value <= 0x0F:
+            raise ValueError('refresh_rate must be from 0 to 15')
+        self._config_data[_REFRESH_RATE_POS] = value
+
+    @property
     def pad_left(self):
         return self._config_data[_HOR_SPACE_POS] >> 4
 
@@ -154,4 +176,16 @@ class GT911Extension(object):
         # write all config data to the touch IC
         self._write_reg(_CONFIG_START_REG, buf=self._config_mv)
 
+        time.sleep_ms(_CONFIG_APPLY_DELAY_MS)  # NOQA
+
+        readback = bytearray(len(self._config_data) - 2)
+        self._read_reg(_CONFIG_START_REG, buf=readback)
+        if readback != self._config_data[:-2]:
+            raise OSError('GT911 configuration readback failed')
+
         self._indev.hw_reset()
+
+        time.sleep_ms(_CONFIG_APPLY_DELAY_MS)  # NOQA
+        self._read_reg(_CONFIG_START_REG, buf=readback)
+        if readback != self._config_data[:-2]:
+            raise OSError('GT911 configuration was not retained after reset')

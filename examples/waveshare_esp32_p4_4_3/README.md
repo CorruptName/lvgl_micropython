@@ -32,6 +32,31 @@ From the MicroPython REPL, the same script can be pasted or saved to the board
 and imported. The board's generated `display` module initializes the ST7701
 display, GT911 touch controller, and LVGL task handler.
 
+## Touch latency
+
+`touch_latency_test.py` timestamps each fresh GT911 report and its matching
+LVGL `PRESSED` event. It prints the raw-to-LVGL delta, time since the previous
+press, and aggregate minimum, average, and maximum values:
+
+```powershell
+python -m mpremote connect COM10 run examples/waveshare_esp32_p4_4_3/touch_latency_test.py
+```
+
+The Waveshare configurations run LVGL every 16 ms and throttle GT911 reads to
+at most one every 10 ms. The driver throttle remains adjustable at runtime:
+
+```python
+import display
+display.indev.poll_interval_ms = 5
+```
+
+Use non-negative integer milliseconds; `0` disables the additional throttle.
+The effective polling rate cannot exceed LVGL's task cadence. The controller's
+low-power and refresh-rate fields are available through
+`display.indev.firmware_config` and accept values from 0 to 15. Read the current
+values before testing changes, and call `save()` only when a change should be
+persisted.
+
 ## Onboard speaker tone
 
 `audio_tone.py` plays a 440 Hz sine wave for one second at volume 100:

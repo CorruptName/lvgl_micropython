@@ -65,7 +65,7 @@ params = ["st7701.TYPE_WAVESHARE_ESP32_P4_43"]
 device = "indev_device"
 reset_pin = 23
 probe_addresses = true
-poll_interval_ms = 20
+poll_interval_ms = 10
 
 [display.set_backlight]
 params = [100]

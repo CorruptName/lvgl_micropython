@@ -68,8 +68,12 @@ class GT911(pointer_framework.PointerDriver):
         self._rx_mv = memoryview(self._rx_buf)
 
         self._device = device
-        self._poll_interval_ms = poll_interval_ms
+        self._poll_interval_ms = 0
+        self.poll_interval_ms = poll_interval_ms
         self._last_poll = time.ticks_add(time.ticks_ms(), -poll_interval_ms)
+        self._last_report_ms = None
+        self._last_report_us = None
+        self._report_count = 0
 
         if probe_addresses:
             addresses = self._device._bus.scan()
@@ -164,6 +168,28 @@ class GT911(pointer_framework.PointerDriver):
             )
         return gt911_extension.GT911Extension(self, self._device)
 
+    @property
+    def poll_interval_ms(self):
+        return self._poll_interval_ms
+
+    @poll_interval_ms.setter
+    def poll_interval_ms(self, value):
+        if not isinstance(value, int) or value < 0:
+            raise ValueError('poll_interval_ms must be a non-negative integer')
+        self._poll_interval_ms = value
+
+    @property
+    def last_report_ms(self):
+        return self._last_report_ms
+
+    @property
+    def last_report_us(self):
+        return self._last_report_us
+
+    @property
+    def report_count(self):
+        return self._report_count
+
     def _get_coords(self):
         now = time.ticks_ms()
         if time.ticks_diff(now, self._last_poll) < self._poll_interval_ms:
@@ -175,6 +201,9 @@ class GT911(pointer_framework.PointerDriver):
         status = self._rx_buf[0] & 0x80
 
         if status:
+            self._last_report_ms = now
+            self._last_report_us = time.ticks_us()
+            self._report_count += 1
             if touch_cnt == 1:
                 self._read_reg(_POINT_1_REG, 6)
 
