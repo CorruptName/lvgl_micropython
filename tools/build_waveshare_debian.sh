@@ -51,11 +51,6 @@ if ! command -v rsync >/dev/null 2>&1; then
 fi
 
 mkdir -p "$BUILD_ROOT"
-if ((CLEAN)); then
-    rm -rf "$BUILD_ROOT/build" \
-        "$BUILD_ROOT/lib/micropython/ports/esp32/build-ESP32_GENERIC_P4-C6_WIFI"
-fi
-
 echo "Syncing source to native Linux workspace: $BUILD_ROOT"
 rsync -a --delete --no-owner --no-group \
     --exclude '/.venv/' \
@@ -83,6 +78,16 @@ git -C "$HOSTED_PATH" submodule update --init --recursive --quiet
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
     echo "Building pinned toolchain image: $IMAGE"
     docker build -q -t "$IMAGE" -f "$BUILD_ROOT/tools/docker/esp32-p4.Dockerfile" "$BUILD_ROOT/tools/docker"
+fi
+
+if ((CLEAN)); then
+    echo "Removing cached ESP-NOW build output..."
+    docker run --rm \
+        --mount "type=bind,source=$BUILD_ROOT,target=/workspace" \
+        "$IMAGE" \
+        rm -rf \
+            /workspace/build \
+            /workspace/lib/micropython/ports/esp32/build-ESP32_GENERIC_P4-C6_WIFI
 fi
 
 uid="$(id -u)"
